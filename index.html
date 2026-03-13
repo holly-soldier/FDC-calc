@@ -78,13 +78,26 @@
     .list-item:last-child { border-bottom: none; }
     .list-item.dragging { opacity: 0.5; }
     .drag-handle { padding: 10px; font-size: 20px; color: #888; cursor: grab; }
+
+    /* Readme モーダル (ポップアップ) のデザイン */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 15px; opacity: 0; transition: opacity 0.2s; }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    .modal-content { background: var(--card-bg); color: var(--text-color); padding: 20px; border-radius: 10px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative; }
+    .modal-close { position: absolute; top: 10px; right: 15px; font-size: 1.5rem; cursor: pointer; color: var(--text-color); opacity: 0.7; }
+    .modal-content h2 { margin-top: 0; color: var(--primary); border-bottom: 2px solid var(--border-color); padding-bottom: 5px; font-size: 1.2rem;}
+    .modal-content h3 { margin-top: 15px; margin-bottom: 5px; font-size: 1rem; color: var(--text-color); }
+    .modal-content ul { padding-left: 20px; margin-top: 5px; font-size: 0.85rem; line-height: 1.5; opacity: 0.9; }
+    .modal-content p { font-size: 0.85rem; line-height: 1.5; opacity: 0.9; }
   </style>
 </head>
 <body>
 
 <header>
   <span id="header-title">FDC & MGRS</span>
-  <button onclick="toggleNightMode()" style="width:auto; padding:5px 10px; margin:0; background:rgba(0,0,0,0.2); border:1px solid var(--header-text); color:var(--header-text); font-size:0.9rem; border-radius:5px;">🌙 暗視</button>
+  <div style="display: flex; gap: 5px;">
+    <button onclick="showReadme()" style="width:auto; padding:5px 10px; margin:0; background:rgba(0,0,0,0.2); border:1px solid var(--header-text); color:var(--header-text); font-size:0.9rem; border-radius:5px;">ℹ️</button>
+    <button onclick="toggleNightMode()" style="width:auto; padding:5px 10px; margin:0; background:rgba(0,0,0,0.2); border:1px solid var(--header-text); color:var(--header-text); font-size:0.9rem; border-radius:5px;">🌙 暗視</button>
+  </div>
 </header>
 
 <div class="container">
@@ -293,6 +306,46 @@
     </div>
   </div>
 
+</div>
+
+<div id="readme-modal" class="modal-overlay" onclick="closeReadmeOnBg(event)">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeReadme()">&times;</span>
+    <h2>📖 アプリの使い方 (README)</h2>
+    <p>本アプリは、迫撃砲の射撃指揮（FDC）と、MGRS座標を用いた高度なナビゲーション・測量機能を統合した戦術用PWAツールです。オフライン環境でも完全動作します。</p>
+    
+    <h3>🎯 FDC (射撃指揮)</h3>
+    <ul>
+      <li>目標座標と装薬を入力し、3個分隊の射撃諸元を即時計算します。</li>
+      <li>「設定」タブで入力した緯度と装薬性能から、ToF（滞空時間）とコリオリの力による偏流を自動計算し、方位角に適用します。</li>
+    </ul>
+
+    <h3>🔭 測量 (Survey)</h3>
+    <ul>
+      <li><b>極座標:</b> 観測者(FO)からの距離と方位で目標を割り出します。</li>
+      <li><b>修正射撃:</b> 現在の目標座標に対し、観測者からの左右・遠近のズレを適用します。</li>
+      <li><b>交会法:</b> 既知の点からの方位角を用いて、未知の点（目標や現在地）を計算します。</li>
+      <li><b>トラバース:</b> 始点からの方位と距離を連続して入力し、到達点を計算します。</li>
+    </ul>
+
+    <h3>📍 座標管理 (Points)</h3>
+    <ul>
+      <li>手動、またはGPSで現在地を取得してMGRS座標を保存します。</li>
+      <li>テキスト形式での一括読み込み・書き出し（データ共有）に対応しています。</li>
+    </ul>
+
+    <h3>🗺️ マップ (Map)</h3>
+    <ul>
+      <li>登録した座標、陣地、観測者、ターゲットを自動プロットします。</li>
+      <li>「背景設定」からスマホ内の地図画像を読み込み、オフラインマップとして利用可能です。</li>
+    </ul>
+
+    <h3>⚙️ 設定 (Settings) & その他</h3>
+    <ul>
+      <li>各分隊の陣地座標、装薬の射程範囲を設定します。設定内容は自動保存されます。</li>
+      <li>右上の「🌙」ボタンで、夜間任務用のタクティカル・ナイトモード（赤色UI）に切り替わります。</li>
+    </ul>
+  </div>
 </div>
 
 <div class="tab-bar">
@@ -800,6 +853,20 @@
         .catch(err => console.log('SW登録失敗:', err));
     });
   }
+  // ==========================================
+  // Readme (ヘルプ) 開閉ロジック
+  // ==========================================
+  function showReadme() { 
+    document.getElementById('readme-modal').classList.add('active'); 
+  }
+  function closeReadme() { 
+    document.getElementById('readme-modal').classList.remove('active'); 
+  }
+  // 黒い背景部分をタップした時にも閉じる機能
+  function closeReadmeOnBg(e) { 
+    if(e.target === document.getElementById('readme-modal')) closeReadme(); 
+  }
+
 </script>
 
 </body>
