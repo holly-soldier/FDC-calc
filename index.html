@@ -24,7 +24,7 @@
         --map-text: rgba(255,255,255,0.9); --list-border: #333333; --map-grid-halo: rgba(0,0,0,0.6); --map-text-halo: rgba(0,0,0,0.8);
       }
     }
-    /* タクティカル・ナイトモード (暗視ゴーグル対応) */
+    /* タクティカル・ナイトモード */
     body.tactical-night {
       --bg-color: #000000; --card-bg: #110000; --text-color: #ff3b30; --border-color: #aa0000;
       --input-bg: #000000; --input-text: #ff3b30; --result-bg: #220000; --result-text: #ff6b60;
@@ -79,7 +79,7 @@
     .list-item.dragging { opacity: 0.5; }
     .drag-handle { padding: 10px; font-size: 20px; color: #888; cursor: grab; }
 
-    /* Readme モーダル (ポップアップ) のデザイン */
+    /* Readme モーダル */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center; padding: 15px; opacity: 0; transition: opacity 0.2s; }
     .modal-overlay.active { display: flex; opacity: 1; }
     .modal-content { background: var(--card-bg); color: var(--text-color); padding: 20px; border-radius: 10px; width: 100%; max-width: 500px; max-height: 80vh; overflow-y: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.5); position: relative; }
@@ -113,10 +113,10 @@
         </div>
       </div>
       <div class="flex">
-        <div><label>E座標 (5桁)</label><input type="number" id="tgt-e"></div>
-        <div><label>N座標 (5桁)</label><input type="number" id="tgt-n"></div>
+        <div><label>E座標 (5桁)</label><input type="number" id="tgt-e" onchange="autoSelectCharge()"></div>
+        <div><label>N座標 (5桁)</label><input type="number" id="tgt-n" onchange="autoSelectCharge()"></div>
       </div>
-      <label>装薬 (Charge)</label>
+      <label>装薬 (Charge) <span style="font-size: 0.75rem; color: #888;">※距離に応じて自動選択されます</span></label>
       <select id="charge-select">
         <option value="1">Charge 1</option><option value="2">Charge 2</option>
         <option value="3" selected>Charge 3</option><option value="4">Charge 4</option>
@@ -126,7 +126,10 @@
     </div>
     
     <div class="card" id="fdc-result-card" style="display: none;">
-      <h2 style="margin-bottom: 5px;">射撃諸元 (3個分隊)</h2>
+      <div class="flex" style="justify-content:space-between; margin-bottom: 5px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">
+        <h2 style="margin:0; border:none; padding:0;">射撃諸元 (3個分隊)</h2>
+        <button class="btn-red" style="width:auto; padding:6px 12px; margin:0; font-size:0.85rem;" onclick="gotoAdjustFire()">🎯 修正射撃</button>
+      </div>
       <div style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 10px;" id="drift-info"></div>
       <div id="fdc-results-container"></div>
     </div>
@@ -308,6 +311,14 @@
 
 </div>
 
+<div class="tab-bar">
+  <a href="#" class="tab active" onclick="switchTab('fdc', '射撃指揮 (FDC)', this)">🎯<br>FDC</a>
+  <a href="#" class="tab" onclick="switchTab('survey', '観測・測量', this)">🔭<br>測量</a>
+  <a href="#" class="tab" onclick="switchTab('points', '座標管理', this)">📍<br>座標</a>
+  <a href="#" class="tab" onclick="switchTab('map', '状況図', this)">🗺️<br>マップ</a>
+  <a href="#" class="tab" onclick="switchTab('settings', '設定', this)">⚙️<br>設定</a>
+</div>
+
 <div id="readme-modal" class="modal-overlay" onclick="closeReadmeOnBg(event)">
   <div class="modal-content">
     <span class="modal-close" onclick="closeReadme()">&times;</span>
@@ -316,7 +327,8 @@
     
     <h3>🎯 FDC (射撃指揮)</h3>
     <ul>
-      <li>目標座標と装薬を入力し、3個分隊の射撃諸元を即時計算します。</li>
+      <li>目標座標を入力すると、設定された射程に沿って一番少ない装薬が自動で選択されます。</li>
+      <li>射撃後は、結果カードの「🎯修正射撃」ボタンから、即座に着弾の修正計算へ移行できます。</li>
       <li>「設定」タブで入力した緯度と装薬性能から、ToF（滞空時間）とコリオリの力による偏流を自動計算し、方位角に適用します。</li>
     </ul>
 
@@ -328,32 +340,12 @@
       <li><b>トラバース:</b> 始点からの方位と距離を連続して入力し、到達点を計算します。</li>
     </ul>
 
-    <h3>📍 座標管理 (Points)</h3>
+    <h3>📍 座標管理 (Points) / 🗺️ マップ (Map)</h3>
     <ul>
-      <li>手動、またはGPSで現在地を取得してMGRS座標を保存します。</li>
-      <li>テキスト形式での一括読み込み・書き出し（データ共有）に対応しています。</li>
-    </ul>
-
-    <h3>🗺️ マップ (Map)</h3>
-    <ul>
-      <li>登録した座標、陣地、観測者、ターゲットを自動プロットします。</li>
-      <li>「背景設定」からスマホ内の地図画像を読み込み、オフラインマップとして利用可能です。</li>
-    </ul>
-
-    <h3>⚙️ 設定 (Settings) & その他</h3>
-    <ul>
-      <li>各分隊の陣地座標、装薬の射程範囲を設定します。設定内容は自動保存されます。</li>
-      <li>右上の「🌙」ボタンで、夜間任務用のタクティカル・ナイトモード（赤色UI）に切り替わります。</li>
+      <li>手動、またはGPSで現在地を取得して座標を保存・データ共有が可能です。</li>
+      <li>登録した座標、陣地、観測者、ターゲットを自動プロットします。スマホ内の画像をオフラインマップとして利用可能です。</li>
     </ul>
   </div>
-</div>
-
-<div class="tab-bar">
-  <a href="#" class="tab active" onclick="switchTab('fdc', '射撃指揮 (FDC)', this)">🎯<br>FDC</a>
-  <a href="#" class="tab" onclick="switchTab('survey', '観測・測量', this)">🔭<br>測量</a>
-  <a href="#" class="tab" onclick="switchTab('points', '座標管理', this)">📍<br>座標</a>
-  <a href="#" class="tab" onclick="switchTab('map', '状況図', this)">🗺️<br>マップ</a>
-  <a href="#" class="tab" onclick="switchTab('settings', '設定', this)">⚙️<br>設定</a>
 </div>
 
 <script>
@@ -361,27 +353,19 @@
   // システムデータ管理
   // ==========================================
   const MILS_CIRCLE = 6400.0;
-  
-  // FDC陣地データ
   let sys = JSON.parse(localStorage.getItem('pwa_sys')) || {
     s1: {e: 9950, n: 10000}, s2: {e: 10000, n: 10000, lat: 35.0}, s3: {e: 10050, n: 10000},
     fo: {e: 11000, n: 12500}, tgt: {e: 10000, n: 13000}
   };
-  
-  // FDC装薬データ
   const defaultCharges = {
     1:{min:180,max:800}, 2:{min:400,max:1500}, 3:{min:800,max:2400},
     4:{min:1200,max:3500}, 5:{min:1800,max:4800}, 6:{min:2500,max:6000}
   };
   let charges = JSON.parse(localStorage.getItem('pwa_charges')) || defaultCharges;
-
-  // MGRS座標データ
   let savedPoints = JSON.parse(localStorage.getItem('mgrsPoints') || '[]');
   let lastColor = localStorage.getItem('mgrsLastColor') || '#ff3b30';
   let isNightMode = localStorage.getItem('tacticalMode') === 'true';
   let editingId = null; 
-
-  // MGRSマップ背景データ
   let mapOverlay = JSON.parse(localStorage.getItem('mgrsMapOverlay') || 'null');
   let mapImageObj = new Image();
   if (mapOverlay) { mapImageObj.src = mapOverlay.dataUrl; }
@@ -391,17 +375,13 @@
   // ==========================================
   window.onload = () => {
     if (isNightMode) document.body.classList.add('tactical-night');
-    loadInputs();
-    renderChargeSettings();
-    updateSavedList();
-    updateMapDropdowns();
+    loadInputs(); renderChargeSettings(); updateSavedList(); updateMapDropdowns();
     document.getElementById('f6_color').value = lastColor;
   };
 
   function pad5(num) { let n = Math.round(num); n = ((n % 100000) + 100000) % 100000; return String(n).padStart(5, '0'); }
   function pad4(num) { return String(Math.round(num)).padStart(4, '0'); }
 
-  // タブ・ビュー切り替え
   function switchTab(pageId, title, element) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -422,12 +402,15 @@
     isNightMode = !isNightMode;
     if (isNightMode) document.body.classList.add('tactical-night');
     else document.body.classList.remove('tactical-night');
-    localStorage.setItem('tacticalMode', isNightMode);
-    drawMap(currentP1, currentP2, false); 
+    localStorage.setItem('tacticalMode', isNightMode); drawMap(currentP1, currentP2, false); 
   }
 
+  function showReadme() { document.getElementById('readme-modal').classList.add('active'); }
+  function closeReadme() { document.getElementById('readme-modal').classList.remove('active'); }
+  function closeReadmeOnBg(e) { if(e.target === document.getElementById('readme-modal')) closeReadme(); }
+
   // ==========================================
-  // FDC システム系ロジック (陣地・装薬・諸元計算)
+  // FDC システム系ロジック
   // ==========================================
   function loadInputs() {
     document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
@@ -447,19 +430,12 @@
   function renderChargeSettings() {
     const container = document.getElementById('charge-settings-container'); container.innerHTML = '';
     for (let i = 1; i <= 6; i++) {
-      container.innerHTML += `<div class="flex" style="margin-bottom:5px;">
-        <span style="width:60px; font-weight:bold;">Chg ${i}</span>
-        <div><input type="number" id="chg-${i}-min" value="${charges[i].min}" placeholder="Min"></div>
-        <div><input type="number" id="chg-${i}-max" value="${charges[i].max}" placeholder="Max"></div>
-      </div>`;
+      container.innerHTML += `<div class="flex" style="margin-bottom:5px;"><span style="width:60px; font-weight:bold;">Chg ${i}</span><div><input type="number" id="chg-${i}-min" value="${charges[i].min}" placeholder="Min"></div><div><input type="number" id="chg-${i}-max" value="${charges[i].max}" placeholder="Max"></div></div>`;
     }
   }
 
   function saveChargeSettings() {
-    for (let i = 1; i <= 6; i++) {
-      charges[i].min = Number(document.getElementById(`chg-${i}-min`).value);
-      charges[i].max = Number(document.getElementById(`chg-${i}-max`).value);
-    }
+    for (let i = 1; i <= 6; i++) { charges[i].min = Number(document.getElementById(`chg-${i}-min`).value); charges[i].max = Number(document.getElementById(`chg-${i}-max`).value); }
     localStorage.setItem('pwa_charges', JSON.stringify(charges)); alert("装薬データを保存しました。");
   }
 
@@ -469,15 +445,44 @@
     localStorage.setItem('pwa_sys', JSON.stringify(sys));
   }
 
+  // 【改修1】装薬の自動選択機能
+  function autoSelectCharge() {
+    let te = Number(document.getElementById('tgt-e').value);
+    let tn = Number(document.getElementById('tgt-n').value);
+    if (!te || !tn) return;
+    
+    // 基準砲(第2分隊)からの距離を計算
+    let dx = te - sys.s2.e;
+    let dy = tn - sys.s2.n;
+    let dist = Math.sqrt(dx*dx + dy*dy);
+    
+    // 最小の装薬(1)から順にチェックし、射程内に入ったらそれを選択して終了
+    for (let i = 1; i <= 6; i++) {
+      if (dist >= charges[i].min && dist <= charges[i].max) {
+        document.getElementById('charge-select').value = i;
+        break; 
+      }
+    }
+  }
+
   function loadTargetFromSelect() {
     let sel = document.getElementById('fdc_target_select').value;
     if(sel) {
       let p = savedPoints.find(pt => pt.id == sel);
-      if(p) { updateTargetAndSave(p.e, p.n); }
+      if(p) { 
+        updateTargetAndSave(p.e, p.n); 
+        autoSelectCharge(); // リスト選択時にも自動装薬を設定
+      }
     }
   }
 
-  // FDC物理エンジン
+  // 【改修2】FDCタブから修正射撃へのジャンプ機能
+  function gotoAdjustFire() {
+    switchTab('survey', '観測・測量', document.querySelectorAll('.tab')[1]);
+    document.getElementById('survey-menu').value = 'surv-adjust';
+    switchSurveyView();
+  }
+
   function calculateForPos(pos, tgt, chargeNum) {
     const dx = tgt.e - pos.e; const dy = tgt.n - pos.n;
     const dist = Math.sqrt(dx*dx + dy*dy);
@@ -491,7 +496,6 @@
     const elevMils = highAngleRad * (180.0 / Math.PI) * (6400.0 / 360.0);
     const tof = (2.0 * v0 * Math.sin(highAngleRad)) / g;
 
-    // コリオリ偏流 (基準砲の緯度を使用)
     const latRad = (sys.s2.lat || 35.0) * (Math.PI / 180.0);
     const driftMilsRaw = Math.atan2(7.2921159e-5 * Math.sin(latRad) * dist * tof, dist) * (3200.0 / Math.PI);
     let finalAzm = Math.round(mils) + Math.round(-driftMilsRaw);
@@ -519,9 +523,8 @@
       container.innerHTML += html + `</div></div>`;
     });
     
-    if(!r2.error && r2.driftMils !== 0) {
-      document.getElementById('drift-info').innerText = `※コリオリ偏流修正: ${r2.driftMils > 0 ? '右' : '左'} ${Math.abs(r2.driftMils)} mil適用済`;
-    } else { document.getElementById('drift-info').innerText = ""; }
+    if(!r2.error && r2.driftMils !== 0) { document.getElementById('drift-info').innerText = `※コリオリ偏流修正: ${r2.driftMils > 0 ? '右' : '左'} ${Math.abs(r2.driftMils)} mil適用済`; } 
+    else { document.getElementById('drift-info').innerText = ""; }
     document.getElementById('fdc-result-card').style.display = "block";
     document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
   }
@@ -559,7 +562,6 @@
     localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList();
   }
 
-  // 極座標
   function calcPolar() {
     let fe=Number(document.getElementById('fo-e').value); let fn=Number(document.getElementById('fo-n').value);
     let azm=Number(document.getElementById('polar-azm').value); let dist=Number(document.getElementById('polar-dist').value);
@@ -567,9 +569,10 @@
     sys.fo.e=fe; sys.fo.n=fn;
     let rad = azm * (Math.PI / 3200.0);
     updateTargetAndSave(fe + dist * Math.sin(rad), fn + dist * Math.cos(rad));
+    autoSelectCharge(); // FOからの算定時にも自動装薬
     switchTab('fdc', '射撃指揮 (FDC)', document.querySelectorAll('.tab')[0]); calculateMission();
   }
-  // 修正射撃
+
   function calcAdjust() {
     let otAzm=Number(document.getElementById('adj-azm').value); let rl=Number(document.getElementById('adj-rl').value); let ad=Number(document.getElementById('adj-ad').value);
     if(!otAzm) return alert("入力エラー");
@@ -578,9 +581,10 @@
     let n = sys.tgt.n + ad * Math.cos(rad) + rl * Math.cos(rad + Math.PI/2);
     updateTargetAndSave(e, n);
     document.getElementById('adj-rl').value = 0; document.getElementById('adj-ad').value = 0;
+    autoSelectCharge(); // 修正適用時にも距離が変わるため自動装薬
     switchTab('fdc', '射撃指揮 (FDC)', document.querySelectorAll('.tab')[0]); calculateMission();
   }
-  // 前方交会
+
   function calcF3() {
     let p1x=Number(document.getElementById('f3_p1x').value); let p1y=Number(document.getElementById('f3_p1y').value); let az1=Number(document.getElementById('f3_az1').value);
     let p2x=Number(document.getElementById('f3_p2x').value); let p2y=Number(document.getElementById('f3_p2y').value); let az2=Number(document.getElementById('f3_az2').value);
@@ -588,13 +592,10 @@
     let tan1 = Math.tan(Math.PI/2 - (az1 * Math.PI/3200)); let tan2 = Math.tan(Math.PI/2 - (az2 * Math.PI/3200));
     let res = document.getElementById('res3');
     if (Math.abs(tan1 - tan2) < 0.0001) { res.innerHTML = '<span style="color:red">交点なし (平行等)</span>'; }
-    else { 
-      let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; 
-      res.innerHTML = `交点: E:${pad5(intX)} N:${pad5(intY)} <button onclick="saveSurveyResult(${intX},${intY},'Intersect')" class="btn-gps">保存</button>`; 
-    }
+    else { let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; res.innerHTML = `交点: E:${pad5(intX)} N:${pad5(intY)} <button onclick="saveSurveyResult(${intX},${intY},'Intersect')" class="btn-gps">保存</button>`; }
     res.classList.remove('hidden');
   }
-  // 後方交会
+
   function calcF4() {
     let p1x=Number(document.getElementById('f4_p1x').value); let p1y=Number(document.getElementById('f4_p1y').value); let az1=Number(document.getElementById('f4_az1').value);
     let p2x=Number(document.getElementById('f4_p2x').value); let p2y=Number(document.getElementById('f4_p2y').value); let az2=Number(document.getElementById('f4_az2').value);
@@ -602,28 +603,16 @@
     let tan1 = Math.tan(Math.PI/2 - (((az1 + 3200) % 6400) * Math.PI/3200)); let tan2 = Math.tan(Math.PI/2 - (((az2 + 3200) % 6400) * Math.PI/3200));
     let res = document.getElementById('res4');
     if (Math.abs(tan1 - tan2) < 0.0001) res.innerHTML = '<span style="color:red">交点なし (平行等)</span>';
-    else { 
-      let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; 
-      res.innerHTML = `現在地: E:${pad5(intX)} N:${pad5(intY)} <button onclick="saveSurveyResult(${intX},${intY},'Resect')" class="btn-gps">保存</button>`; 
-    }
+    else { let intX = (tan1 * p1x - tan2 * p2x + p2y - p1y) / (tan1 - tan2); let intY = tan1 * (intX - p1x) + p1y; res.innerHTML = `現在地: E:${pad5(intX)} N:${pad5(intY)} <button onclick="saveSurveyResult(${intX},${intY},'Resect')" class="btn-gps">保存</button>`; }
     res.classList.remove('hidden');
   }
-  // トラバース
-  function addRouteRow() { 
-    let row = document.createElement('div'); row.className = 'flex'; row.style.marginBottom = '5px';
-    row.innerHTML = `<input type="number" class="r_az" placeholder="方位(mil)"><input type="number" class="r_dist" placeholder="距離(m)"><button class="btn-red" style="width:auto; padding:10px; margin:0;" onclick="this.parentElement.remove()">×</button>`; 
-    document.getElementById('routeList').appendChild(row); 
-  }
+
+  function addRouteRow() { let row = document.createElement('div'); row.className = 'flex'; row.style.marginBottom = '5px'; row.innerHTML = `<input type="number" class="r_az" placeholder="方位(mil)"><input type="number" class="r_dist" placeholder="距離(m)"><button class="btn-red" style="width:auto; padding:10px; margin:0;" onclick="this.parentElement.remove()">×</button>`; document.getElementById('routeList').appendChild(row); }
   function calcF5() {
     let cx = Number(document.getElementById('f5_x').value); let cy = Number(document.getElementById('f5_y').value); if(!cx||!cy) return;
     let azInputs = document.querySelectorAll('.r_az'); let distInputs = document.querySelectorAll('.r_dist');
-    for (let i = 0; i < azInputs.length; i++) {
-      let az = Number(azInputs[i].value); let dist = Number(distInputs[i].value); if (!az || !dist) continue;
-      cx = cx + dist * Math.sin(az * Math.PI/3200); cy = cy + dist * Math.cos(az * Math.PI/3200);
-    }
-    let res = document.getElementById('res5');
-    res.innerHTML = `到達点: E:${pad5(cx)} N:${pad5(cy)} <button onclick="saveSurveyResult(${cx},${cy},'Trav')" class="btn-gps">保存</button>`;
-    res.classList.remove('hidden');
+    for (let i = 0; i < azInputs.length; i++) { let az = Number(azInputs[i].value); let dist = Number(distInputs[i].value); if (!az || !dist) continue; cx = cx + dist * Math.sin(az * Math.PI/3200); cy = cy + dist * Math.cos(az * Math.PI/3200); }
+    let res = document.getElementById('res5'); res.innerHTML = `到達点: E:${pad5(cx)} N:${pad5(cy)} <button onclick="saveSurveyResult(${cx},${cy},'Trav')" class="btn-gps">保存</button>`; res.classList.remove('hidden');
   }
 
 
@@ -633,11 +622,8 @@
   function savePointManual() {
     let name = document.getElementById('f6_name').value; let x = Number(document.getElementById('f6_x').value); let y = Number(document.getElementById('f6_y').value); let color = document.getElementById('f6_color').value;
     if (!name || !x || !y) { alert("入力エラー"); return; }
-    if (editingId !== null) {
-      let p = savedPoints.find(p => p.id === editingId); if (p) { p.name = name; p.e = x; p.n = y; p.color = color; }
-    } else {
-      savedPoints.push({ id: Date.now(), name: name, e: x, n: y, z: null, color: color }); lastColor = color; localStorage.setItem('mgrsLastColor', color);
-    }
+    if (editingId !== null) { let p = savedPoints.find(p => p.id === editingId); if (p) { p.name = name; p.e = x; p.n = y; p.color = color; } } 
+    else { savedPoints.push({ id: Date.now(), name: name, e: x, n: y, z: null, color: color }); lastColor = color; localStorage.setItem('mgrsLastColor', color); }
     cancelEdit(); localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); updateMapDropdowns();
   }
   function editPoint(id) {
@@ -645,25 +631,19 @@
     document.getElementById('f6_name').value = p.name; document.getElementById('f6_x').value = pad5(p.e); document.getElementById('f6_y').value = pad5(p.n); document.getElementById('f6_color').value = p.color || lastColor;
     document.getElementById('btn_manual_save').innerText = "更新"; document.getElementById('btn_manual_cancel').classList.remove('hidden');
   }
-  function cancelEdit() {
-    editingId = null; document.getElementById('f6_name').value = ""; document.getElementById('f6_x').value = ""; document.getElementById('f6_y').value = "";
-    document.getElementById('btn_manual_save').innerText = "登録"; document.getElementById('btn_manual_cancel').classList.add('hidden');
-  }
+  function cancelEdit() { editingId = null; document.getElementById('f6_name').value = ""; document.getElementById('f6_x').value = ""; document.getElementById('f6_y').value = ""; document.getElementById('btn_manual_save').innerText = "登録"; document.getElementById('btn_manual_cancel').classList.add('hidden'); }
   function deletePoint(id) { savedPoints = savedPoints.filter(p => p.id !== id); localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); }
   function deleteAllPoints() { if(confirm("全削除しますか？")) { savedPoints = []; localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); } }
   function applySort() {
     let mode = document.getElementById('sort_select').value; if (mode === 'manual') return;
-    if (mode === 'name_asc') savedPoints.sort((a,b) => a.name.localeCompare(b.name,'ja'));
-    else if (mode === 'e_asc') savedPoints.sort((a,b) => a.e - b.e);
+    if (mode === 'name_asc') savedPoints.sort((a,b) => a.name.localeCompare(b.name,'ja')); else if (mode === 'e_asc') savedPoints.sort((a,b) => a.e - b.e);
     localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList();
   }
   function updateSavedList() {
     let html = "";
     savedPoints.forEach((p) => {
       let pColor = p.color || '#ff3b30';
-      html += `<div class="list-item" data-id="${p.id}"><div class="drag-handle">≡</div>
-                 <div style="flex:1; margin-left:5px;"><strong><span style="display:inline-block; width:12px; height:12px; background:${pColor}; border-radius:50%; margin-right:5px;"></span>${p.name}</strong><br><span style="font-size:0.85rem; color:#888;">E:${pad5(p.e)} N:${pad5(p.n)}</span></div>
-                 <div style="display:flex; gap:5px;"><button class="btn-gray" style="padding:6px; margin:0;" onclick="editPoint(${p.id})">編</button><button class="btn-red" style="padding:6px; margin:0;" onclick="deletePoint(${p.id})">削</button></div></div>`;
+      html += `<div class="list-item" data-id="${p.id}"><div class="drag-handle">≡</div><div style="flex:1; margin-left:5px;"><strong><span style="display:inline-block; width:12px; height:12px; background:${pColor}; border-radius:50%; margin-right:5px;"></span>${p.name}</strong><br><span style="font-size:0.85rem; color:#888;">E:${pad5(p.e)} N:${pad5(p.n)}</span></div><div style="display:flex; gap:5px;"><button class="btn-gray" style="padding:6px; margin:0;" onclick="editPoint(${p.id})">編</button><button class="btn-red" style="padding:6px; margin:0;" onclick="deletePoint(${p.id})">削</button></div></div>`;
     });
     document.getElementById('savedList').innerHTML = html; updateMapDropdowns();
   }
@@ -672,30 +652,19 @@
   const listContainer = document.getElementById('savedList'); let dragEl = null;
   listContainer.addEventListener('touchstart', function(e) { const handle = e.target.closest('.drag-handle'); if (!handle) return; e.preventDefault(); dragEl = handle.closest('.list-item'); dragEl.classList.add('dragging'); }, {passive: false});
   listContainer.addEventListener('touchmove', function(e) { if (!dragEl) return; e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY); if (!target) return; const targetItem = target.closest('.list-item'); if (targetItem && targetItem !== dragEl) { const rect = targetItem.getBoundingClientRect(); const isNext = (touch.clientY - rect.top) / (rect.bottom - rect.top) > 0.5; targetItem.parentNode.insertBefore(dragEl, isNext ? targetItem.nextSibling : targetItem); } }, {passive: false});
-  listContainer.addEventListener('touchend', function(e) {
-    if (!dragEl) return; dragEl.classList.remove('dragging'); dragEl = null;
-    const items = document.querySelectorAll('#savedList .list-item'); let newArray = [];
-    items.forEach(item => { const id = parseInt(item.getAttribute('data-id')); const point = savedPoints.find(p => p.id === id); if(point) newArray.push(point); });
-    savedPoints = newArray; localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); document.getElementById('sort_select').value = 'manual';
-  });
+  listContainer.addEventListener('touchend', function(e) { if (!dragEl) return; dragEl.classList.remove('dragging'); dragEl = null; const items = document.querySelectorAll('#savedList .list-item'); let newArray = []; items.forEach(item => { const id = parseInt(item.getAttribute('data-id')); const point = savedPoints.find(p => p.id === id); if(point) newArray.push(point); }); savedPoints = newArray; localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); document.getElementById('sort_select').value = 'manual'; });
 
-  // 一括入出力
   function toggleBatchIO() { document.getElementById('batch_io_area').classList.toggle('hidden'); }
   function importPoints() {
     let text = document.getElementById('io_text').value; if (!text.trim()) return;
     let lines = text.split('\n'); let added=0;
     for (let line of lines) {
        let parts = line.trim().split(/[\s\t]+/);
-       if (parts.length >= 3) {
-          let name = parts[0]; let e = Number(parts[1]); let n = Number(parts[2]);
-          if(e && n) { let color = parts[4] || parts[3] || lastColor; if(!color.startsWith('#')) color=lastColor; savedPoints.push({ id: Date.now()+added, name: name, e: e, n: n, z: null, color: color }); added++; }
-       }
+       if (parts.length >= 3) { let name = parts[0]; let e = Number(parts[1]); let n = Number(parts[2]); if(e && n) { let color = parts[4] || parts[3] || lastColor; if(!color.startsWith('#')) color=lastColor; savedPoints.push({ id: Date.now()+added, name: name, e: e, n: n, z: null, color: color }); added++; } }
     }
     localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); alert(`${added}件追加`); document.getElementById('io_text').value=""; toggleBatchIO();
   }
-  function exportPoints() {
-    document.getElementById('io_text').value = savedPoints.map(p => `${p.name} ${pad5(p.e)} ${pad5(p.n)} - ${p.color || '#ff3b30'}`).join('\n');
-  }
+  function exportPoints() { document.getElementById('io_text').value = savedPoints.map(p => `${p.name} ${pad5(p.e)} ${pad5(p.n)} - ${p.color || '#ff3b30'}`).join('\n'); }
 
 
   // ==========================================
@@ -711,30 +680,19 @@
   }
   
   function saveMapOverlay() {
-    let fileInput = document.getElementById('map_image_input');
-    let tl_e = Number(document.getElementById('map_tl_e').value); let tl_n = Number(document.getElementById('map_tl_n').value);
-    let br_e = Number(document.getElementById('map_br_e').value); let br_n = Number(document.getElementById('map_br_n').value);
+    let fileInput = document.getElementById('map_image_input'); let tl_e = Number(document.getElementById('map_tl_e').value); let tl_n = Number(document.getElementById('map_tl_n').value); let br_e = Number(document.getElementById('map_br_e').value); let br_n = Number(document.getElementById('map_br_n').value);
     if(!tl_e||!br_e) return alert("座標入力エラー");
     if (fileInput.files && fileInput.files[0]) {
       let reader = new FileReader();
       reader.onload = function(e) {
         let img = new Image();
         img.onload = function() {
-          let canvas = document.createElement('canvas'); let ctx = canvas.getContext('2d');
-          let maxW = 1600; let scale = img.width > maxW ? maxW / img.width : 1;
-          canvas.width = img.width * scale; canvas.height = img.height * scale;
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          mapOverlay = { dataUrl: dataUrl, tl_e: tl_e, tl_n: tl_n, br_e: br_e, br_n: br_n };
-          localStorage.setItem('mgrsMapOverlay', JSON.stringify(mapOverlay)); mapImageObj.src = dataUrl;
-          toggleMapSettings(); drawMap(null, null, true);
-        };
-        img.src = e.target.result;
-      };
-      reader.readAsDataURL(fileInput.files[0]);
-    } else if (mapOverlay) {
-      mapOverlay.tl_e = tl_e; mapOverlay.tl_n = tl_n; mapOverlay.br_e = br_e; mapOverlay.br_n = br_n; localStorage.setItem('mgrsMapOverlay', JSON.stringify(mapOverlay)); toggleMapSettings(); drawMap(null, null, true);
-    }
+          let canvas = document.createElement('canvas'); let ctx = canvas.getContext('2d'); let maxW = 1600; let scale = img.width > maxW ? maxW / img.width : 1;
+          canvas.width = img.width * scale; canvas.height = img.height * scale; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          mapOverlay = { dataUrl: dataUrl, tl_e: tl_e, tl_n: tl_n, br_e: br_e, br_n: br_n }; localStorage.setItem('mgrsMapOverlay', JSON.stringify(mapOverlay)); mapImageObj.src = dataUrl; toggleMapSettings(); drawMap(null, null, true);
+        }; img.src = e.target.result;
+      }; reader.readAsDataURL(fileInput.files[0]);
+    } else if (mapOverlay) { mapOverlay.tl_e = tl_e; mapOverlay.tl_n = tl_n; mapOverlay.br_e = br_e; mapOverlay.br_n = br_n; localStorage.setItem('mgrsMapOverlay', JSON.stringify(mapOverlay)); toggleMapSettings(); drawMap(null, null, true); }
   }
   function clearMapOverlay() { mapOverlay = null; localStorage.removeItem('mgrsMapOverlay'); drawMap(null, null, true); }
 
@@ -743,131 +701,64 @@
     currentP1 = savedPoints.find(p => p.id == sId); currentP2 = savedPoints.find(p => p.id == eId);
     let dx = currentP2.e - currentP1.e; let dy = currentP2.n - currentP1.n;
     let dist = Math.sqrt(dx*dx + dy*dy); let rad = Math.atan2(dx, dy); let mil = rad * (3200 / Math.PI); if(mil<0) mil+=6400;
-    document.getElementById('resMap').innerHTML = `【${currentP1.name} → ${currentP2.name}】<br>方位角: ${pad4(mil)} mil<br>距離: ${Math.round(dist)} m`;
-    document.getElementById('resMap').classList.remove('hidden'); drawMap(currentP1, currentP2, false);
+    document.getElementById('resMap').innerHTML = `【${currentP1.name} → ${currentP2.name}】<br>方位角: ${pad4(mil)} mil<br>距離: ${Math.round(dist)} m`; document.getElementById('resMap').classList.remove('hidden'); drawMap(currentP1, currentP2, false);
   }
 
   function resetMapView() { drawMap(currentP1, currentP2, true); }
 
   function drawMap(highlightP1 = null, highlightP2 = null, resetView = false) {
     let canvas = document.getElementById('mapCanvas'); let ctx = canvas.getContext('2d'); let w = canvas.width=canvas.offsetWidth; let h = canvas.height=canvas.offsetHeight;
-    const style = getComputedStyle(document.body);
-    const cBg = style.getPropertyValue('--map-bg').trim(); const cGrid1km = style.getPropertyValue('--map-grid-1km').trim();
-    const cGrid100m = style.getPropertyValue('--map-grid-100m').trim(); const cText = style.getPropertyValue('--map-text').trim();
-    const cGridHalo = style.getPropertyValue('--map-grid-halo').trim(); const cTextHalo = style.getPropertyValue('--map-text-halo').trim();
-    
+    const style = getComputedStyle(document.body); const cBg = style.getPropertyValue('--map-bg').trim(); const cGrid1km = style.getPropertyValue('--map-grid-1km').trim(); const cGrid100m = style.getPropertyValue('--map-grid-100m').trim(); const cText = style.getPropertyValue('--map-text').trim(); const cGridHalo = style.getPropertyValue('--map-grid-halo').trim(); const cTextHalo = style.getPropertyValue('--map-text-halo').trim();
     ctx.fillStyle = cBg; ctx.fillRect(0, 0, w, h);
 
-    // プロットする点を統合 (MGRSリスト + FDC陣地 + ターゲット)
-    let pointsToBound = [...savedPoints];
-    pointsToBound.push({e:sys.s1.e, n:sys.s1.n, name:"S1", color:"#3b82f6"});
-    pointsToBound.push({e:sys.s2.e, n:sys.s2.n, name:"S2", color:"#3b82f6"});
-    pointsToBound.push({e:sys.s3.e, n:sys.s3.n, name:"S3", color:"#3b82f6"});
-    pointsToBound.push({e:sys.fo.e, n:sys.fo.n, name:"FO", color:"#10b981"});
-    pointsToBound.push({e:sys.tgt.e, n:sys.tgt.n, name:"TGT", color:"#ef4444"});
-    
+    let pointsToBound = [...savedPoints]; pointsToBound.push({e:sys.s1.e, n:sys.s1.n, name:"S1", color:"#3b82f6"}); pointsToBound.push({e:sys.s2.e, n:sys.s2.n, name:"S2", color:"#3b82f6"}); pointsToBound.push({e:sys.s3.e, n:sys.s3.n, name:"S3", color:"#3b82f6"}); pointsToBound.push({e:sys.fo.e, n:sys.fo.n, name:"FO", color:"#10b981"}); pointsToBound.push({e:sys.tgt.e, n:sys.tgt.n, name:"TGT", color:"#ef4444"});
     if (mapOverlay) { pointsToBound.push({e: mapOverlay.tl_e, n: mapOverlay.tl_n}); pointsToBound.push({e: mapOverlay.br_e, n: mapOverlay.br_n}); }
 
     if (resetView) {
-      mapState.refE = pointsToBound[0].e; mapState.refN = pointsToBound[0].n; 
-      let minDx = 0, maxDx = 0, minDy = 0, maxDy = 0;
-      pointsToBound.forEach(p => {
-        let dx = p.e - mapState.refE; let dy = p.n - mapState.refN;
-        if (dx < minDx) minDx = dx; if (dx > maxDx) maxDx = dx; if (dy < minDy) minDy = dy; if (dy > maxDy) maxDy = dy;
-      });
-      if (maxDx - minDx < 1000) { let mid = (maxDx + minDx)/2; minDx = mid - 500; maxDx = mid + 500; } 
-      if (maxDy - minDy < 1000) { let mid = (maxDy + minDy)/2; minDy = mid - 500; maxDy = mid + 500; }
-      mapState.minDx = minDx; mapState.maxDx = maxDx; mapState.minDy = minDy; mapState.maxDy = maxDy;
-      mapState.baseScale = Math.min((w - mapState.padding*2) / (maxDx - minDx), (h - mapState.padding*2) / (maxDy - minDy));
-      mapState.x = 0; mapState.y = 0; mapState.scale = 1;
+      mapState.refE = pointsToBound[0].e; mapState.refN = pointsToBound[0].n; let minDx = 0, maxDx = 0, minDy = 0, maxDy = 0;
+      pointsToBound.forEach(p => { let dx = p.e - mapState.refE; let dy = p.n - mapState.refN; if (dx < minDx) minDx = dx; if (dx > maxDx) maxDx = dx; if (dy < minDy) minDy = dy; if (dy > maxDy) maxDy = dy; });
+      if (maxDx - minDx < 1000) { let mid = (maxDx + minDx)/2; minDx = mid - 500; maxDx = mid + 500; } if (maxDy - minDy < 1000) { let mid = (maxDy + minDy)/2; minDy = mid - 500; maxDy = mid + 500; }
+      mapState.minDx = minDx; mapState.maxDx = maxDx; mapState.minDy = minDy; mapState.maxDy = maxDy; mapState.baseScale = Math.min((w - mapState.padding*2) / (maxDx - minDx), (h - mapState.padding*2) / (maxDy - minDy)); mapState.x = 0; mapState.y = 0; mapState.scale = 1;
     }
 
-    let getX = (e) => { return (mapState.padding + (e - mapState.refE - mapState.minDx) * mapState.baseScale) * mapState.scale + mapState.x; };
-    let getY = (n) => { return (h - mapState.padding - (n - mapState.refN - mapState.minDy) * mapState.baseScale) * mapState.scale + mapState.y; };
+    let getX = (e) => { return (mapState.padding + (e - mapState.refE - mapState.minDx) * mapState.baseScale) * mapState.scale + mapState.x; }; let getY = (n) => { return (h - mapState.padding - (n - mapState.refN - mapState.minDy) * mapState.baseScale) * mapState.scale + mapState.y; };
     
-    // 背景画像
-    if (mapOverlay && mapImageObj.complete && mapImageObj.src) {
-       let img_x = getX(mapOverlay.tl_e); let img_y = getY(mapOverlay.tl_n);
-       let img_w = getX(mapOverlay.br_e) - img_x; let img_h = getY(mapOverlay.br_n) - img_y; 
-       ctx.drawImage(mapImageObj, img_x, img_y, img_w, img_h);
-    }
+    if (mapOverlay && mapImageObj.complete && mapImageObj.src) { let img_x = getX(mapOverlay.tl_e); let img_y = getY(mapOverlay.tl_n); let img_w = getX(mapOverlay.br_e) - img_x; let img_h = getY(mapOverlay.br_n) - img_y; ctx.drawImage(mapImageObj, img_x, img_y, img_w, img_h); }
 
-    let screenToE = (X) => mapState.refE + mapState.minDx + ((X - mapState.x) / mapState.scale - mapState.padding) / mapState.baseScale;
-    let screenToN = (Y) => mapState.refN + mapState.minDy + ((h - mapState.padding - (Y - mapState.y) / mapState.scale)) / mapState.baseScale;
-    
-    let sE = Math.floor(screenToE(0) / 1000) * 1000; let eE = Math.ceil(screenToE(w) / 1000) * 1000;
-    let sN = Math.floor(screenToN(h) / 1000) * 1000; let eN = Math.ceil(screenToN(0) / 1000) * 1000;
+    let screenToE = (X) => mapState.refE + mapState.minDx + ((X - mapState.x) / mapState.scale - mapState.padding) / mapState.baseScale; let screenToN = (Y) => mapState.refN + mapState.minDy + ((h - mapState.padding - (Y - mapState.y) / mapState.scale)) / mapState.baseScale;
+    let sE = Math.floor(screenToE(0) / 1000) * 1000; let eE = Math.ceil(screenToE(w) / 1000) * 1000; let sN = Math.floor(screenToN(h) / 1000) * 1000; let eN = Math.ceil(screenToN(0) / 1000) * 1000;
     if(sE>eE){let t=sE; sE=eE; eE=t;} if(sN>eN){let t=sN; sN=eN; eN=t;}
 
     ctx.lineJoin = "round";
-
-    // 100mグリッド
     let pixelPer100m = 100 * mapState.baseScale * mapState.scale;
     if (pixelPer100m > 12) { 
       let sE100=Math.floor(sE/100)*100; let eE100=Math.ceil(eE/100)*100; let sN100=Math.floor(sN/100)*100; let eN100=Math.ceil(eN/100)*100;
-      ctx.beginPath();
-      for(let e=sE100; e<=eE100; e+=100) { let x=getX(e); if(x>-10&&x<w+10){ ctx.moveTo(x,0); ctx.lineTo(x,h); } }
-      for(let n=sN100; n<=eN100; n+=100) { let y=getY(n); if(y>-10&&y<h+10){ ctx.moveTo(0,y); ctx.lineTo(w,y); } }
+      ctx.beginPath(); for(let e=sE100; e<=eE100; e+=100) { let x=getX(e); if(x>-10&&x<w+10){ ctx.moveTo(x,0); ctx.lineTo(x,h); } } for(let n=sN100; n<=eN100; n+=100) { let y=getY(n); if(y>-10&&y<h+10){ ctx.moveTo(0,y); ctx.lineTo(w,y); } }
       ctx.strokeStyle=cGridHalo; ctx.lineWidth=2; ctx.stroke(); ctx.strokeStyle=cGrid100m; ctx.lineWidth=1; ctx.stroke();
     }
-
-    // 1kmグリッド
-    ctx.beginPath();
-    for(let e=sE; e<=eE; e+=1000) { let x=getX(e); if(x>-10&&x<w+10){ ctx.moveTo(x,0); ctx.lineTo(x,h); } }
-    for(let n=sN; n<=eN; n+=1000) { let y=getY(n); if(y>-10&&y<h+10){ ctx.moveTo(0,y); ctx.lineTo(w,y); } }
+    ctx.beginPath(); for(let e=sE; e<=eE; e+=1000) { let x=getX(e); if(x>-10&&x<w+10){ ctx.moveTo(x,0); ctx.lineTo(x,h); } } for(let n=sN; n<=eN; n+=1000) { let y=getY(n); if(y>-10&&y<h+10){ ctx.moveTo(0,y); ctx.lineTo(w,y); } }
     ctx.strokeStyle=cGridHalo; ctx.lineWidth=3; ctx.stroke(); ctx.strokeStyle=cGrid1km; ctx.lineWidth=1.5; ctx.stroke();
 
-    ctx.font = "bold 11px sans-serif"; ctx.textAlign="center"; 
-    for(let e=sE; e<=eE; e+=1000) { let x=getX(e); if(x>0&&x<w){ let t=pad5(e).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,x,h-5); ctx.fillStyle=cText; ctx.fillText(t,x,h-5); } }
-    ctx.textAlign="left"; 
-    for(let n=sN; n<=eN; n+=1000) { let y=getY(n); if(y>0&&y<h){ let t=pad5(n).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,5,y+4); ctx.fillStyle=cText; ctx.fillText(t,5,y+4); } }
+    ctx.font = "bold 11px sans-serif"; ctx.textAlign="center"; for(let e=sE; e<=eE; e+=1000) { let x=getX(e); if(x>0&&x<w){ let t=pad5(e).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,x,h-5); ctx.fillStyle=cText; ctx.fillText(t,x,h-5); } }
+    ctx.textAlign="left"; for(let n=sN; n<=eN; n+=1000) { let y=getY(n); if(y>0&&y<h){ let t=pad5(n).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,5,y+4); ctx.fillStyle=cText; ctx.fillText(t,5,y+4); } }
 
-    if (highlightP1 && highlightP2) { 
-      ctx.strokeStyle = isNightMode ? '#ff3b30' : 'rgba(0,122,255,0.7)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(getX(highlightP1.e), getY(highlightP1.n)); ctx.lineTo(getX(highlightP2.e), getY(highlightP2.n)); ctx.stroke(); 
-    }
+    if (highlightP1 && highlightP2) { ctx.strokeStyle = isNightMode ? '#ff3b30' : 'rgba(0,122,255,0.7)'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(getX(highlightP1.e), getY(highlightP1.n)); ctx.lineTo(getX(highlightP2.e), getY(highlightP2.n)); ctx.stroke(); }
 
-    // ピン描画
     pointsToBound.forEach(p => {
       let x = getX(p.e), y = getY(p.n); let pinColor = isNightMode ? '#ff3b30' : (p.color || '#ff3b30');
-      if(x > -20 && x < w + 20 && y > -20 && y < h + 20) {
-        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fillStyle = pinColor; ctx.fill(); ctx.strokeStyle = cBg; ctx.lineWidth = 1.5; ctx.stroke(); 
-        ctx.font = "bold 11px sans-serif"; ctx.lineWidth = 3; ctx.strokeStyle = cTextHalo; ctx.strokeText(p.name, x+8, y+4); ctx.fillStyle = isNightMode?'#ff3b30':'#333'; ctx.fillText(p.name, x+8, y+4);
-      }
+      if(x > -20 && x < w + 20 && y > -20 && y < h + 20) { ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fillStyle = pinColor; ctx.fill(); ctx.strokeStyle = cBg; ctx.lineWidth = 1.5; ctx.stroke(); ctx.font = "bold 11px sans-serif"; ctx.lineWidth = 3; ctx.strokeStyle = cTextHalo; ctx.strokeText(p.name, x+8, y+4); ctx.fillStyle = isNightMode?'#ff3b30':'#333'; ctx.fillText(p.name, x+8, y+4); }
     });
   }
 
-  // キャンバスジェスチャー
   const canvas = document.getElementById('mapCanvas'); let isDragging = false; let startPan = {x:0, y:0}; let initialPinchDist = null;
   canvas.addEventListener('touchstart', (e) => { e.preventDefault(); if(e.touches.length===1){ isDragging=true; startPan={x:e.touches[0].clientX-mapState.x, y:e.touches[0].clientY-mapState.y}; } else if(e.touches.length===2){ isDragging=false; initialPinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); } }, {passive:false});
   canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(e.touches.length===1 && isDragging){ mapState.x=e.touches[0].clientX-startPan.x; mapState.y=e.touches[0].clientY-startPan.y; requestAnimationFrame(()=>drawMap(currentP1,currentP2,false)); } else if(e.touches.length===2 && initialPinchDist){ const newDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); const centerX=(e.touches[0].clientX+e.touches[1].clientX)/2; const centerY=(e.touches[0].clientY+e.touches[1].clientY)/2; const rect=canvas.getBoundingClientRect(); const canvasCenterX=centerX-rect.left; const canvasCenterY=centerY-rect.top; const scaleFactor=newDist/initialPinchDist; mapState.x=canvasCenterX-(canvasCenterX-mapState.x)*scaleFactor; mapState.y=canvasCenterY-(canvasCenterY-mapState.y)*scaleFactor; mapState.scale*=scaleFactor; requestAnimationFrame(()=>drawMap(currentP1,currentP2,false)); initialPinchDist=newDist; } }, {passive:false});
   canvas.addEventListener('touchend', (e) => { e.preventDefault(); if(e.touches.length<2) initialPinchDist=null; if(e.touches.length===0) isDragging=false; });
 
-    // PWA SW (バックグラウンド更新対応)
+  // PWA SW (バックグラウンド更新対応)
   if ('serviceWorker' in navigator) { 
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('sw.js')
-        .then(registration => {
-          // ページ遷移時や定期的に、裏で新しいアップデートがないかチェックする
-          registration.update();
-        })
-        .catch(err => console.log('SW登録失敗:', err));
-    });
+    window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').then(registration => { registration.update(); }).catch(err => console.log('SW登録失敗:', err)); });
   }
-  // ==========================================
-  // Readme (ヘルプ) 開閉ロジック
-  // ==========================================
-  function showReadme() { 
-    document.getElementById('readme-modal').classList.add('active'); 
-  }
-  function closeReadme() { 
-    document.getElementById('readme-modal').classList.remove('active'); 
-  }
-  // 黒い背景部分をタップした時にも閉じる機能
-  function closeReadmeOnBg(e) { 
-    if(e.target === document.getElementById('readme-modal')) closeReadme(); 
-  }
-
 </script>
-
 </body>
 </html>
