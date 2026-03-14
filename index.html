@@ -37,7 +37,8 @@
     body.tactical-night input, body.tactical-night select, body.tactical-night textarea { border: 1px solid #ff0000; }
 
     /* ========== 共通レイアウト ========== */
-    body { font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; padding-bottom: 70px; transition: background-color 0.3s; }
+    /* 【改修】iPhoneのバー対策として下部の余白を拡大 */
+    body { font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; padding-bottom: calc(env(safe-area-inset-bottom) + 90px); transition: background-color 0.3s; }
     header { background-color: var(--header-bg); color: var(--header-text); padding: 15px; font-size: 1.2rem; font-weight: bold; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; transition: background-color 0.3s; }
     .container { padding: 15px; }
     .card { background: var(--card-bg); padding: 15px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); margin-bottom: 15px; transition: background-color 0.3s; }
@@ -52,6 +53,7 @@
     button.btn-green { background-color: #10b981; }
     button.btn-red { background-color: #ef4444; }
     button.btn-gray { background-color: #6b7280; }
+    button.btn-dark { background-color: #374151; }
     button.btn-gps { background-color: #f59e0b; width: auto; padding: 6px 12px; font-size: 0.8rem; margin: 0; }
     
     .flex { display: flex; gap: 10px; align-items: center; }
@@ -59,7 +61,8 @@
     .hidden { display: none !important; }
 
     /* タブ・ページ制御 */
-    .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); display: flex; border-top: 1px solid var(--border-color); padding-bottom: env(safe-area-inset-bottom); z-index: 100; }
+    /* 【改修】タブの高さを少し上げ、iPhoneのバーにかぶらないように padding-bottom を追加 */
+    .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); display: flex; border-top: 1px solid var(--border-color); padding-bottom: calc(env(safe-area-inset-bottom) + 15px); z-index: 100; }
     .tab { flex: 1; text-align: center; padding: 10px 0; color: #888; text-decoration: none; font-size: 0.75rem; border-top: 3px solid transparent; }
     .tab.active { color: var(--primary); border-top-color: var(--primary); font-weight: bold; }
     .page, .sub-view { display: none; }
@@ -103,7 +106,8 @@
 <div class="container">
   
   <div id="page-fdc" class="page active">
-    <div class="card">
+    
+    <div class="card" id="fdc-input-area">
       <h2>目標データ (Fire Mission)</h2>
       <div style="margin-bottom:10px;">
         <label>登録座標から目標を選択</label>
@@ -116,7 +120,7 @@
         <div><label>E座標 (5桁)</label><input type="number" id="tgt-e" onchange="autoSelectCharge()"></div>
         <div><label>N座標 (5桁)</label><input type="number" id="tgt-n" onchange="autoSelectCharge()"></div>
       </div>
-      <label>装薬 (Charge) <span style="font-size: 0.75rem; color: #888;">※距離に応じて自動選択されます</span></label>
+      <label>装薬 (Charge) <span style="font-size: 0.75rem; color: #888;">※距離に応じて自動選択</span></label>
       <select id="charge-select">
         <option value="1">Charge 1</option><option value="2">Charge 2</option>
         <option value="3" selected>Charge 3</option><option value="4">Charge 4</option>
@@ -131,7 +135,10 @@
         <button class="btn-red" style="width:auto; padding:6px 12px; margin:0; font-size:0.85rem;" onclick="gotoAdjustFire()">🎯 修正射撃</button>
       </div>
       <div style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 10px;" id="drift-info"></div>
+      
       <div id="fdc-results-container"></div>
+
+      <button class="btn-dark" style="margin-top: 15px;" onclick="endMission()">🏁 任務終了 (End Mission)</button>
     </div>
   </div>
 
@@ -328,8 +335,9 @@
     <h3>🎯 FDC (射撃指揮)</h3>
     <ul>
       <li>目標座標を入力すると、設定された射程に沿って一番少ない装薬が自動で選択されます。</li>
-      <li>射撃後は、結果カードの「🎯修正射撃」ボタンから、即座に着弾の修正計算へ移行できます。</li>
-      <li>「設定」タブで入力した緯度と装薬性能から、ToF（滞空時間）とコリオリの力による偏流を自動計算し、方位角に適用します。</li>
+      <li>「諸元を計算」ボタンを押すと、誤操作防止のため入力画面がロック（非表示）されます。</li>
+      <li>射撃完了後は、下部の「🏁 任務終了」ボタンを押すことでロックが解除され、次の目標が入力可能になります。</li>
+      <li>着弾修正が必要な場合は、結果カード右上の「🎯修正射撃」ボタンから、即座に修正計算へ移行できます。</li>
     </ul>
 
     <h3>🔭 測量 (Survey)</h3>
@@ -445,23 +453,12 @@
     localStorage.setItem('pwa_sys', JSON.stringify(sys));
   }
 
-  // 【改修1】装薬の自動選択機能
   function autoSelectCharge() {
-    let te = Number(document.getElementById('tgt-e').value);
-    let tn = Number(document.getElementById('tgt-n').value);
+    let te = Number(document.getElementById('tgt-e').value); let tn = Number(document.getElementById('tgt-n').value);
     if (!te || !tn) return;
-    
-    // 基準砲(第2分隊)からの距離を計算
-    let dx = te - sys.s2.e;
-    let dy = tn - sys.s2.n;
-    let dist = Math.sqrt(dx*dx + dy*dy);
-    
-    // 最小の装薬(1)から順にチェックし、射程内に入ったらそれを選択して終了
+    let dx = te - sys.s2.e; let dy = tn - sys.s2.n; let dist = Math.sqrt(dx*dx + dy*dy);
     for (let i = 1; i <= 6; i++) {
-      if (dist >= charges[i].min && dist <= charges[i].max) {
-        document.getElementById('charge-select').value = i;
-        break; 
-      }
+      if (dist >= charges[i].min && dist <= charges[i].max) { document.getElementById('charge-select').value = i; break; }
     }
   }
 
@@ -469,18 +466,21 @@
     let sel = document.getElementById('fdc_target_select').value;
     if(sel) {
       let p = savedPoints.find(pt => pt.id == sel);
-      if(p) { 
-        updateTargetAndSave(p.e, p.n); 
-        autoSelectCharge(); // リスト選択時にも自動装薬を設定
-      }
+      if(p) { updateTargetAndSave(p.e, p.n); autoSelectCharge(); }
     }
   }
 
-  // 【改修2】FDCタブから修正射撃へのジャンプ機能
   function gotoAdjustFire() {
     switchTab('survey', '観測・測量', document.querySelectorAll('.tab')[1]);
-    document.getElementById('survey-menu').value = 'surv-adjust';
-    switchSurveyView();
+    document.getElementById('survey-menu').value = 'surv-adjust'; switchSurveyView();
+  }
+
+  // 【改修】任務終了 (End Mission) の機能
+  function endMission() {
+    if (confirm("現在の任務を終了し、新たな目標入力画面に戻りますか？")) {
+      document.getElementById('fdc-result-card').style.display = "none";
+      document.getElementById('fdc-input-area').style.display = "block";
+    }
   }
 
   function calculateForPos(pos, tgt, chargeNum) {
@@ -525,7 +525,11 @@
     
     if(!r2.error && r2.driftMils !== 0) { document.getElementById('drift-info').innerText = `※コリオリ偏流修正: ${r2.driftMils > 0 ? '右' : '左'} ${Math.abs(r2.driftMils)} mil適用済`; } 
     else { document.getElementById('drift-info').innerText = ""; }
+    
+    // 【改修】計算成功時にUIを「Mission Active」状態に切り替え
+    document.getElementById('fdc-input-area').style.display = "none";
     document.getElementById('fdc-result-card').style.display = "block";
+    
     document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
   }
 
@@ -569,7 +573,7 @@
     sys.fo.e=fe; sys.fo.n=fn;
     let rad = azm * (Math.PI / 3200.0);
     updateTargetAndSave(fe + dist * Math.sin(rad), fn + dist * Math.cos(rad));
-    autoSelectCharge(); // FOからの算定時にも自動装薬
+    autoSelectCharge(); 
     switchTab('fdc', '射撃指揮 (FDC)', document.querySelectorAll('.tab')[0]); calculateMission();
   }
 
@@ -581,7 +585,7 @@
     let n = sys.tgt.n + ad * Math.cos(rad) + rl * Math.cos(rad + Math.PI/2);
     updateTargetAndSave(e, n);
     document.getElementById('adj-rl').value = 0; document.getElementById('adj-ad').value = 0;
-    autoSelectCharge(); // 修正適用時にも距離が変わるため自動装薬
+    autoSelectCharge(); 
     switchTab('fdc', '射撃指揮 (FDC)', document.querySelectorAll('.tab')[0]); calculateMission();
   }
 
@@ -648,7 +652,6 @@
     document.getElementById('savedList').innerHTML = html; updateMapDropdowns();
   }
   
-  // DnD
   const listContainer = document.getElementById('savedList'); let dragEl = null;
   listContainer.addEventListener('touchstart', function(e) { const handle = e.target.closest('.drag-handle'); if (!handle) return; e.preventDefault(); dragEl = handle.closest('.list-item'); dragEl.classList.add('dragging'); }, {passive: false});
   listContainer.addEventListener('touchmove', function(e) { if (!dragEl) return; e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY); if (!target) return; const targetItem = target.closest('.list-item'); if (targetItem && targetItem !== dragEl) { const rect = targetItem.getBoundingClientRect(); const isNext = (touch.clientY - rect.top) / (rect.bottom - rect.top) > 0.5; targetItem.parentNode.insertBefore(dragEl, isNext ? targetItem.nextSibling : targetItem); } }, {passive: false});
@@ -665,7 +668,6 @@
     localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); alert(`${added}件追加`); document.getElementById('io_text').value=""; toggleBatchIO();
   }
   function exportPoints() { document.getElementById('io_text').value = savedPoints.map(p => `${p.name} ${pad5(p.e)} ${pad5(p.n)} - ${p.color || '#ff3b30'}`).join('\n'); }
-
 
   // ==========================================
   // マップエンジン
@@ -755,7 +757,6 @@
   canvas.addEventListener('touchmove', (e) => { e.preventDefault(); if(e.touches.length===1 && isDragging){ mapState.x=e.touches[0].clientX-startPan.x; mapState.y=e.touches[0].clientY-startPan.y; requestAnimationFrame(()=>drawMap(currentP1,currentP2,false)); } else if(e.touches.length===2 && initialPinchDist){ const newDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); const centerX=(e.touches[0].clientX+e.touches[1].clientX)/2; const centerY=(e.touches[0].clientY+e.touches[1].clientY)/2; const rect=canvas.getBoundingClientRect(); const canvasCenterX=centerX-rect.left; const canvasCenterY=centerY-rect.top; const scaleFactor=newDist/initialPinchDist; mapState.x=canvasCenterX-(canvasCenterX-mapState.x)*scaleFactor; mapState.y=canvasCenterY-(canvasCenterY-mapState.y)*scaleFactor; mapState.scale*=scaleFactor; requestAnimationFrame(()=>drawMap(currentP1,currentP2,false)); initialPinchDist=newDist; } }, {passive:false});
   canvas.addEventListener('touchend', (e) => { e.preventDefault(); if(e.touches.length<2) initialPinchDist=null; if(e.touches.length===0) isDragging=false; });
 
-  // PWA SW (バックグラウンド更新対応)
   if ('serviceWorker' in navigator) { 
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').then(registration => { registration.update(); }).catch(err => console.log('SW登録失敗:', err)); });
   }
