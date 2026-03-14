@@ -37,6 +37,7 @@
     body.tactical-night input, body.tactical-night select, body.tactical-night textarea { border: 1px solid #ff0000; }
 
     /* ========== 共通レイアウト ========== */
+    /* iPhoneのバー対策として下部の余白を拡大 */
     body { font-family: -apple-system, sans-serif; background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 0; padding-bottom: calc(env(safe-area-inset-bottom) + 90px); transition: background-color 0.3s; }
     header { background-color: var(--header-bg); color: var(--header-text); padding: 15px; font-size: 1.2rem; font-weight: bold; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; transition: background-color 0.3s; }
     .container { padding: 15px; }
@@ -61,20 +62,17 @@
 
     /* タブ・ページ制御 */
     .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); display: flex; border-top: 1px solid var(--border-color); padding-bottom: calc(env(safe-area-inset-bottom) + 15px); z-index: 100; }
-    .tab { flex: 1; text-align: center; padding: 10px 0; color: #888; text-decoration: none; font-size: 0.75rem; border-top: 3px solid transparent; }
+    .tab { flex: 1; text-align: center; padding: 10px 0; color: #888; text-decoration: none; font-size: 0.75rem; border-top: 3px solid transparent; cursor: pointer; }
     .tab.active { color: var(--primary); border-top-color: var(--primary); font-weight: bold; }
     .page, .sub-view { display: none; }
     .page.active, .sub-view.active { display: block; }
 
     /* FDC 計算結果レイアウト */
     .sqd-result { background: var(--result-bg); padding: 10px; border-radius: 5px; margin-bottom: 10px; border-left: 4px solid var(--primary); color: var(--result-text); }
-    .sqd-title { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px; align-items: center; }
+    .sqd-title { font-weight: bold; margin-bottom: 5px; display: flex; justify-content: space-between; border-bottom: 1px dashed var(--border-color); padding-bottom: 4px; }
     .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; font-size: 0.95rem; }
     .val { font-weight: bold; font-family: monospace; font-size: 1.1rem; }
     .elev-val { color: #ef4444; font-size: 1.2rem; font-weight: bold; }
-    
-    /* 予備陣地バッジ */
-    .badge-alt { background-color: #f59e0b; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; margin-left: 5px; }
 
     /* マップ & 座標リスト */
     canvas { width: 100%; height: auto; aspect-ratio: 1; background-color: var(--map-bg); border: 1px solid var(--border-color); border-radius: 8px; touch-action: none; }
@@ -110,63 +108,32 @@
     
     <div class="card" id="fdc-input-area">
       <h2>目標データ (Fire Mission)</h2>
-      
-      <div class="flex" style="margin-bottom:15px; background:var(--bg-color); border-radius:8px; padding:3px;">
-        <button id="btn_mission_grid" style="margin:0; background:var(--primary); color:white; padding:8px; font-size:0.9rem;" onclick="setMissionType('grid')">グリッド (座標)</button>
-        <button id="btn_mission_polar" style="margin:0; background:transparent; color:var(--text-color); padding:8px; font-size:0.9rem;" onclick="setMissionType('polar')">極座標 (FOから)</button>
-      </div>
-
-      <div id="fdc_area_grid">
-        <div style="margin-bottom:10px;">
-          <label>登録座標から目標を選択</label>
-          <div class="flex">
-            <select id="fdc_target_select" onchange="loadTargetFromSelect()"></select>
-            <button class="btn-gray" onclick="updateMapDropdowns()" style="width:auto; padding:10px; margin-bottom:12px;">🔄</button>
-          </div>
-        </div>
+      <div style="margin-bottom:10px;">
+        <label>登録座標から目標を選択</label>
         <div class="flex">
-          <div><label>E座標 (5桁)</label><input type="number" id="tgt-e" onchange="autoSelectCharge()"></div>
-          <div><label>N座標 (5桁)</label><input type="number" id="tgt-n" onchange="autoSelectCharge()"></div>
+          <select id="fdc_target_select" onchange="loadTargetFromSelect()"></select>
+          <button class="btn-gray" onclick="updateMapDropdowns()" style="width:auto; padding:10px; margin-bottom:12px;">🔄</button>
         </div>
       </div>
-
-      <div id="fdc_area_polar" class="hidden">
-        <div style="margin-bottom:10px;">
-          <label>観測者 (FO) を選択</label>
-          <select id="fdc_fo_select"></select>
-        </div>
-        <div class="flex">
-          <div><label>方位角 (mil)</label><input type="number" id="polar-azm" placeholder="例: 3200"></div>
-          <div><label>距離 (m)</label><input type="number" id="polar-dist" placeholder="例: 1500"></div>
-        </div>
+      <div class="flex">
+        <div><label>E座標 (5桁)</label><input type="number" id="tgt-e" onchange="autoSelectCharge()"></div>
+        <div><label>N座標 (5桁)</label><input type="number" id="tgt-n" onchange="autoSelectCharge()"></div>
       </div>
-
       <label>装薬 (Charge) <span style="font-size: 0.75rem; color: #888;">※距離に応じて自動選択</span></label>
       <select id="charge-select">
         <option value="1">Charge 1</option><option value="2">Charge 2</option>
         <option value="3" selected>Charge 3</option><option value="4">Charge 4</option>
         <option value="5">Charge 5</option><option value="6">Charge 6</option>
       </select>
-      <button onclick="calculateMission(false)">諸元を計算 (Calculate)</button>
+      <button onclick="calculateMission()">諸元を計算 (Calculate)</button>
     </div>
     
     <div class="card" id="fdc-result-card" style="display: none;">
       <div class="flex" style="justify-content:space-between; margin-bottom: 5px; border-bottom: 2px solid var(--border-color); padding-bottom: 5px;">
-        <h2 style="margin:0; border:none; padding:0;">射撃諸元 (Active)</h2>
+        <h2 style="margin:0; border:none; padding:0;">射撃諸元 (3個分隊)</h2>
         <button class="btn-red" style="width:auto; padding:6px 12px; margin:0; font-size:0.85rem;" onclick="gotoAdjustFire()">🎯 修正射撃</button>
       </div>
-
-      <div class="flex" style="justify-content:space-between; align-items:center; margin-bottom: 10px;">
-        <div style="font-size: 0.75rem; opacity: 0.8;" id="drift-info"></div>
-        <div class="flex" style="width:auto;">
-          <label style="margin:0; white-space:nowrap; font-weight:bold;">装薬:</label>
-          <select id="res-charge-select" onchange="changeChargeFromRes()" style="width:auto; margin:0; padding:6px; font-weight:bold; color:var(--primary);">
-            <option value="1">Chg 1</option><option value="2">Chg 2</option>
-            <option value="3">Chg 3</option><option value="4">Chg 4</option>
-            <option value="5">Chg 5</option><option value="6">Chg 6</option>
-          </select>
-        </div>
-      </div>
+      <div style="font-size: 0.8rem; opacity: 0.8; margin-bottom: 10px;" id="drift-info"></div>
       
       <div id="fdc-results-container"></div>
 
@@ -177,23 +144,40 @@
   <div id="page-survey" class="page">
     <div class="card" style="padding-bottom:5px;">
       <select id="survey-menu" onchange="switchSurveyView()">
-        <option value="surv-adjust">1. 修正射撃 (Adjust Fire)</option>
-        <option value="surv-intersect">2. 前方交会法 (Intersection)</option>
-        <option value="surv-resect">3. 後方交会法 (Resection)</option>
-        <option value="surv-traverse">4. トラバース計算 (Traverse)</option>
+        <option value="surv-polar">1. 極座標 (Polar)</option>
+        <option value="surv-adjust">2. 修正射撃 (Adjust Fire)</option>
+        <option value="surv-intersect">3. 前方交会法 (Intersection)</option>
+        <option value="surv-resect">4. 後方交会法 (Resection)</option>
+        <option value="surv-traverse">5. トラバース計算 (Traverse)</option>
       </select>
     </div>
 
-    <div id="surv-adjust" class="sub-view active">
+    <div id="surv-polar" class="sub-view active">
+      <div class="card">
+        <div class="flex" style="justify-content:space-between;"><h2>極座標 (FOから目標算出)</h2><button class="btn-gps" onclick="getGPS('fo-e', 'fo-n')">📍FO現在地</button></div>
+        <p style="font-size:0.8rem; opacity:0.8;">観測者(FO)の陣地データから目標座標を算出します。</p>
+        <div class="flex">
+          <div><label>FO E座標</label><input type="number" id="fo-e"></div>
+          <div><label>FO N座標</label><input type="number" id="fo-n"></div>
+        </div>
+        <div class="flex">
+          <div><label>観測方位角 (mil)</label><input type="number" id="polar-azm" placeholder="例: 3200"></div>
+          <div><label>距離 (m)</label><input type="number" id="polar-dist" placeholder="例: 1500"></div>
+        </div>
+        <button onclick="calcPolar()" class="btn-green">座標算出して FDC へ送る</button>
+      </div>
+    </div>
+
+    <div id="surv-adjust" class="sub-view">
       <div class="card">
         <h2>修正射撃 (Shift from Known Point)</h2>
-        <p style="font-size:0.8rem; opacity:0.8;">現在のFDC目標座標を基準に、観測者からのズレを適用します。</p>
+        <p style="font-size:0.8rem; opacity:0.8;">現在のFDC目標座標を基準に、観測者から見た修正を加えます。</p>
         <label>OT方位角 (mil)</label><input type="number" id="adj-azm" placeholder="例: 0800">
         <div class="flex">
           <div><label>左右 (右+, 左-)</label><input type="number" id="adj-rl" value="0"></div>
           <div><label>遠近 (奥+, 手前-)</label><input type="number" id="adj-ad" value="0"></div>
         </div>
-        <button onclick="calcAdjust()" class="btn-red">修正適用して FDC へ</button>
+        <button onclick="calcAdjust()" class="btn-red">修正適用して FDC へ送る</button>
       </div>
     </div>
 
@@ -211,6 +195,7 @@
 
     <div id="surv-resect" class="sub-view">
       <div class="card"><h2>後方交会法</h2>
+        <p style="font-size:0.8rem; opacity:0.8;">未知の現在地から、既知の2点へ方位を測り現在地を求めます。</p>
         <div class="flex"><div><label>既知点A E座標</label><input type="number" id="f4_p1x"></div><div><label>既知点A N座標</label><input type="number" id="f4_p1y"></div></div>
         <input type="number" id="f4_az1" placeholder="Aへの測定方位角 (mil)">
         <hr style="border:0; border-top:1px dashed var(--border-color); margin:10px 0;">
@@ -258,7 +243,8 @@
       </div>
       
       <div id="batch_io_area" class="hidden" style="margin-bottom:15px; border:1px solid var(--border-color); padding:10px; border-radius:5px;">
-        <textarea id="io_text" placeholder="【書式】名称 E N 標高(任意) 色&#10;例: T1 12345 67890 150 #ff0000"></textarea>
+        <p style="font-size:0.75rem; opacity:0.8; margin-top:0;">【書式】名称 E N 標高(任意) 色<br>例: T1 12345 67890 150 #ff0000</p>
+        <textarea id="io_text" placeholder="ここにテキストを貼り付け"></textarea>
         <div class="flex">
           <button class="btn-green" onclick="importPoints()">読込</button>
           <button class="btn-gray" onclick="exportPoints()">書出</button>
@@ -306,57 +292,24 @@
   </div>
 
   <div id="page-settings" class="page">
-    
-    <div class="card">
-      <h2>観測者 (FO) 管理</h2>
-      <p style="font-size:0.8rem; opacity:0.8;">FDCの「極座標」任務で選択できるFOを登録します。</p>
-      <div id="fo-list-container"></div>
-      <button class="btn-dark" onclick="addFO()">＋ FOを追加</button>
-      <button class="btn-primary" onclick="saveFOs()">FOデータを保存</button>
-    </div>
-
     <div class="card">
       <h2>陣地データ (Base Positions)</h2>
-      <p style="font-size:0.8rem; opacity:0.8;">座標が空欄の分隊は計算結果に表示されません。</p>
-      
-      <div style="border-bottom:1px solid var(--border-color); padding-bottom:10px; margin-bottom:10px;">
-        <div class="flex" style="justify-content:space-between; margin-bottom:5px;">
-          <label style="color:var(--primary); font-weight:bold; margin:0;">第2分隊 (基準砲 / コリオリ基準)</label>
-          <select id="s2-active" style="width:auto; padding:4px; margin:0; font-size:0.85rem;" onchange="saveBasePos()">
-            <option value="main">主陣地</option><option value="alt">予備陣地</option>
-          </select>
-        </div>
-        <div class="flex"><div><input type="number" id="s2-e" placeholder="主 E"></div><div><input type="number" id="s2-n" placeholder="主 N"></div><div><input type="number" id="s2-lat" placeholder="緯度" step="0.1"></div></div>
-        <div class="flex"><div><input type="number" id="s2-alt-e" placeholder="予備 E"></div><div><input type="number" id="s2-alt-n" placeholder="予備 N"></div></div>
+      <label style="color:var(--primary); font-weight:bold;">第2分隊 (基準砲 / コリオリ基準)</label>
+      <div class="flex">
+        <div><input type="number" id="s2-e" placeholder="E座標"></div>
+        <div><input type="number" id="s2-n" placeholder="N座標"></div>
+        <div><input type="number" id="s2-lat" placeholder="緯度(度)" step="0.1" title="偏流計算用"></div>
       </div>
-
-      <div style="border-bottom:1px solid var(--border-color); padding-bottom:10px; margin-bottom:10px;">
-        <div class="flex" style="justify-content:space-between; margin-bottom:5px;">
-          <label style="color:var(--primary); font-weight:bold; margin:0;">第1分隊</label>
-          <select id="s1-active" style="width:auto; padding:4px; margin:0; font-size:0.85rem;" onchange="saveBasePos()">
-            <option value="main">主陣地</option><option value="alt">予備陣地</option>
-          </select>
-        </div>
-        <div class="flex"><div><input type="number" id="s1-e" placeholder="主 E"></div><div><input type="number" id="s1-n" placeholder="主 N"></div></div>
-        <div class="flex"><div><input type="number" id="s1-alt-e" placeholder="予備 E"></div><div><input type="number" id="s1-alt-n" placeholder="予備 N"></div></div>
-      </div>
-
-      <div style="margin-bottom:10px;">
-        <div class="flex" style="justify-content:space-between; margin-bottom:5px;">
-          <label style="color:var(--primary); font-weight:bold; margin:0;">第3分隊</label>
-          <select id="s3-active" style="width:auto; padding:4px; margin:0; font-size:0.85rem;" onchange="saveBasePos()">
-            <option value="main">主陣地</option><option value="alt">予備陣地</option>
-          </select>
-        </div>
-        <div class="flex"><div><input type="number" id="s3-e" placeholder="主 E"></div><div><input type="number" id="s3-n" placeholder="主 N"></div></div>
-        <div class="flex"><div><input type="number" id="s3-alt-e" placeholder="予備 E"></div><div><input type="number" id="s3-alt-n" placeholder="予備 N"></div></div>
-      </div>
-
+      <label style="color:var(--primary); font-weight:bold;">第1分隊</label>
+      <div class="flex"><div><input type="number" id="s1-e" placeholder="E座標"></div><div><input type="number" id="s1-n" placeholder="N座標"></div></div>
+      <label style="color:var(--primary); font-weight:bold;">第3分隊</label>
+      <div class="flex"><div><input type="number" id="s3-e" placeholder="E座標"></div><div><input type="number" id="s3-n" placeholder="N座標"></div></div>
       <button onclick="saveBasePos()" class="btn-green">陣地データを保存</button>
     </div>
 
     <div class="card">
       <h2>装薬の性能設定 (Charge Range)</h2>
+      <p style="font-size:0.8rem; opacity:0.8;">各装薬の最小射程と最大射程(m)を設定。この最大射程から初速が逆算されます。</p>
       <div id="charge-settings-container"></div>
       <button onclick="saveChargeSettings()" class="btn-green">装薬データを保存</button>
     </div>
@@ -365,11 +318,11 @@
 </div>
 
 <div class="tab-bar">
-  <a href="#" class="tab active" onclick="switchTab('fdc', '射撃指揮 (FDC)', this)">🎯<br>FDC</a>
-  <a href="#" class="tab" onclick="switchTab('survey', '観測・測量', this)">🔭<br>測量</a>
-  <a href="#" class="tab" onclick="switchTab('points', '座標管理', this)">📍<br>座標</a>
-  <a href="#" class="tab" onclick="switchTab('map', '状況図', this)">🗺️<br>マップ</a>
-  <a href="#" class="tab" onclick="switchTab('settings', '設定', this)">⚙️<br>設定</a>
+  <a href="javascript:void(0)" class="tab active" onclick="switchTab('fdc', '射撃指揮 (FDC)', this)">🎯<br>FDC</a>
+  <a href="javascript:void(0)" class="tab" onclick="switchTab('survey', '観測・測量', this)">🔭<br>測量</a>
+  <a href="javascript:void(0)" class="tab" onclick="switchTab('points', '座標管理', this)">📍<br>座標</a>
+  <a href="javascript:void(0)" class="tab" onclick="switchTab('map', '状況図', this)">🗺️<br>マップ</a>
+  <a href="javascript:void(0)" class="tab" onclick="switchTab('settings', '設定', this)">⚙️<br>設定</a>
 </div>
 
 <div id="readme-modal" class="modal-overlay" onclick="closeReadmeOnBg(event)">
@@ -380,73 +333,81 @@
     
     <h3>🎯 FDC (射撃指揮)</h3>
     <ul>
-      <li>目標を入力すると、最適な装薬が自動で選択されます。結果画面から手動で装薬を変更し、即座に再計算させることも可能です。</li>
-      <li>「諸元を計算」を押すと誤操作防止のため入力画面がロック（非表示）されます。射撃完了後は下部の「🏁 任務終了」を押してロックを解除してください。</li>
-      <li>「極座標」任務を選ぶと、設定で登録した複数のFO（観測者）リストから特定のFOを指定し、目標を算出できます。</li>
-      <li>座標が空欄の分隊は、計算結果やマップに表示されません。また、設定から主陣地・予備陣地をワンタップで切り替え可能です。</li>
+      <li>目標座標を入力すると、設定された射程に沿って一番少ない装薬が自動で選択されます。</li>
+      <li>「諸元を計算」ボタンを押すと、誤操作防止のため入力画面がロック（非表示）されます。</li>
+      <li>射撃完了後は、下部の「🏁 任務終了」ボタンを押すことでロックが解除され、次の目標が入力可能になります。</li>
+      <li>着弾修正が必要な場合は、結果カード右上の「🎯修正射撃」ボタンから、即座に修正計算へ移行できます。</li>
     </ul>
 
     <h3>🔭 測量 (Survey)</h3>
     <ul>
+      <li><b>極座標:</b> 観測者(FO)からの距離と方位で目標を割り出します。</li>
       <li><b>修正射撃:</b> 現在の目標座標に対し、観測者からの左右・遠近のズレを適用します。</li>
       <li><b>交会法:</b> 既知の点からの方位角を用いて、未知の点（目標や現在地）を計算します。</li>
+      <li><b>トラバース:</b> 始点からの方位と距離を連続して入力し、到達点を計算します。</li>
+    </ul>
+
+    <h3>📍 座標管理 (Points) / 🗺️ マップ (Map)</h3>
+    <ul>
+      <li>手動、またはGPSで現在地を取得して座標を保存・データ共有が可能です。</li>
+      <li>登録した座標、陣地、観測者、ターゲットを自動プロットします。スマホ内の画像をオフラインマップとして利用可能です。</li>
     </ul>
   </div>
 </div>
 
 <script>
   // ==========================================
-  // システムデータ管理 & アップグレード
+  // システムデータ管理
   // ==========================================
   const MILS_CIRCLE = 6400.0;
+  let sys = JSON.parse(localStorage.getItem('pwa_sys')) || {
+    s1: {e: 9950, n: 10000}, s2: {e: 10000, n: 10000, lat: 35.0}, s3: {e: 10050, n: 10000},
+    fo: {e: 11000, n: 12500}, tgt: {e: 10000, n: 13000}
+  };
   
-  // 過去バージョンのデータを最新構造にアップグレード
-  let sys = JSON.parse(localStorage.getItem('pwa_sys')) || {};
-  if (!sys.s1) sys = { s1: {e: 9950, n: 10000}, s2: {e: 10000, n: 10000, lat: 35.0}, s3: {e: 10050, n: 10000}, tgt: {e: 10000, n: 13000} };
-  
-  // 予備陣地プロパティの初期化
-  ['s1', 's2', 's3'].forEach(s => {
-    if (sys[s].use_alt === undefined) {
-      sys[s].alt_e = null; sys[s].alt_n = null; sys[s].use_alt = false;
-    }
-  });
-
-  // 複数FOシステムの初期化
-  if (!sys.fos || sys.fos.length === 0) {
-    let oldFoE = sys.fo ? sys.fo.e : 11000; let oldFoN = sys.fo ? sys.fo.n : 12500;
-    sys.fos = [ { id: Date.now(), name: "FO 1", e: oldFoE, n: oldFoN } ];
-  }
-
-  const defaultCharges = { 1:{min:180,max:800}, 2:{min:400,max:1500}, 3:{min:800,max:2400}, 4:{min:1200,max:3500}, 5:{min:1800,max:4800}, 6:{min:2500,max:6000} };
+  const defaultCharges = {
+    1:{min:180,max:800}, 2:{min:400,max:1500}, 3:{min:800,max:2400},
+    4:{min:1200,max:3500}, 5:{min:1800,max:4800}, 6:{min:2500,max:6000}
+  };
   let charges = JSON.parse(localStorage.getItem('pwa_charges')) || defaultCharges;
+  
   let savedPoints = JSON.parse(localStorage.getItem('mgrsPoints') || '[]');
   let lastColor = localStorage.getItem('mgrsLastColor') || '#ff3b30';
   let isNightMode = localStorage.getItem('tacticalMode') === 'true';
   let editingId = null; 
+  
   let mapOverlay = JSON.parse(localStorage.getItem('mgrsMapOverlay') || 'null');
-  let mapImageObj = new Image(); if (mapOverlay) { mapImageObj.src = mapOverlay.dataUrl; }
-
-  // FDC タブ任務モード状態
-  let currentMissionType = 'grid'; // 'grid' or 'polar'
+  let mapImageObj = new Image();
+  if (mapOverlay) { mapImageObj.src = mapOverlay.dataUrl; }
 
   // ==========================================
   // 初期化処理
   // ==========================================
   window.onload = () => {
     if (isNightMode) document.body.classList.add('tactical-night');
-    loadInputs(); renderFOList(); renderChargeSettings(); updateSavedList(); updateMapDropdowns();
+    loadInputs(); 
+    renderChargeSettings(); 
+    updateSavedList(); 
+    updateMapDropdowns();
     document.getElementById('f6_color').value = lastColor;
-    setMissionType('grid'); // FDCの初期表示
   };
 
-  function pad5(num) { if(!num) return ""; let n = Math.round(num); n = ((n % 100000) + 100000) % 100000; return String(n).padStart(5, '0'); }
-  function pad4(num) { return String(Math.round(num)).padStart(4, '0'); }
+  // 数字のフォーマット
+  function pad5(num) { 
+    let n = Math.round(num); 
+    n = ((n % 100000) + 100000) % 100000; 
+    return String(n).padStart(5, '0'); 
+  }
+  function pad4(num) { 
+    return String(Math.round(num)).padStart(4, '0'); 
+  }
 
+  // UI・タブ切り替え
   function switchTab(pageId, title, element) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
     document.getElementById('page-' + pageId).classList.add('active');
-    element.classList.add('active');
+    if(element) element.classList.add('active');
     document.getElementById('header-title').innerText = title;
     if(pageId === 'map') { updateMapDropdowns(); drawMap(null, null, true); }
     if(pageId === 'fdc') { updateMapDropdowns(); }
@@ -462,7 +423,8 @@
     isNightMode = !isNightMode;
     if (isNightMode) document.body.classList.add('tactical-night');
     else document.body.classList.remove('tactical-night');
-    localStorage.setItem('tacticalMode', isNightMode); drawMap(currentP1, currentP2, false); 
+    localStorage.setItem('tacticalMode', isNightMode); 
+    drawMap(currentP1, currentP2, false); 
   }
 
   function showReadme() { document.getElementById('readme-modal').classList.add('active'); }
@@ -472,93 +434,27 @@
   // ==========================================
   // FDC システム系ロジック
   // ==========================================
-  
-  // 任務種類のトグル (Grid / Polar)
-  function setMissionType(type) {
-    currentMissionType = type;
-    if(type === 'grid') {
-      document.getElementById('btn_mission_grid').style.background = 'var(--primary)';
-      document.getElementById('btn_mission_grid').style.color = 'white';
-      document.getElementById('btn_mission_polar').style.background = 'transparent';
-      document.getElementById('btn_mission_polar').style.color = 'var(--text-color)';
-      document.getElementById('fdc_area_grid').classList.remove('hidden');
-      document.getElementById('fdc_area_polar').classList.add('hidden');
-    } else {
-      document.getElementById('btn_mission_polar').style.background = 'var(--primary)';
-      document.getElementById('btn_mission_polar').style.color = 'white';
-      document.getElementById('btn_mission_grid').style.background = 'transparent';
-      document.getElementById('btn_mission_grid').style.color = 'var(--text-color)';
-      document.getElementById('fdc_area_polar').classList.remove('hidden');
-      document.getElementById('fdc_area_grid').classList.add('hidden');
-    }
-  }
-
   function loadInputs() {
-    document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
-    
-    // Squad 1
-    document.getElementById('s1-e').value = sys.s1.e || ""; document.getElementById('s1-n').value = sys.s1.n || "";
-    document.getElementById('s1-alt-e').value = sys.s1.alt_e || ""; document.getElementById('s1-alt-n').value = sys.s1.alt_n || "";
-    document.getElementById('s1-active').value = sys.s1.use_alt ? 'alt' : 'main';
-    // Squad 2
-    document.getElementById('s2-e').value = sys.s2.e || ""; document.getElementById('s2-n').value = sys.s2.n || "";
-    document.getElementById('s2-alt-e').value = sys.s2.alt_e || ""; document.getElementById('s2-alt-n').value = sys.s2.alt_n || "";
+    document.getElementById('tgt-e').value = pad5(sys.tgt.e); 
+    document.getElementById('tgt-n').value = pad5(sys.tgt.n);
+    document.getElementById('s1-e').value = pad5(sys.s1.e); 
+    document.getElementById('s1-n').value = pad5(sys.s1.n);
+    document.getElementById('s2-e').value = pad5(sys.s2.e); 
+    document.getElementById('s2-n').value = pad5(sys.s2.n); 
     document.getElementById('s2-lat').value = sys.s2.lat;
-    document.getElementById('s2-active').value = sys.s2.use_alt ? 'alt' : 'main';
-    // Squad 3
-    document.getElementById('s3-e').value = sys.s3.e || ""; document.getElementById('s3-n').value = sys.s3.n || "";
-    document.getElementById('s3-alt-e').value = sys.s3.alt_e || ""; document.getElementById('s3-alt-n').value = sys.s3.alt_n || "";
-    document.getElementById('s3-active').value = sys.s3.use_alt ? 'alt' : 'main';
+    document.getElementById('s3-e').value = pad5(sys.s3.e); 
+    document.getElementById('s3-n').value = pad5(sys.s3.n);
+    document.getElementById('fo-e').value = pad5(sys.fo.e); 
+    document.getElementById('fo-n').value = pad5(sys.fo.n);
   }
 
   function saveBasePos() {
-    let parseCoord = (val) => val === "" || val === null ? null : Number(val);
-    sys.s1.e = parseCoord(document.getElementById('s1-e').value); sys.s1.n = parseCoord(document.getElementById('s1-n').value);
-    sys.s1.alt_e = parseCoord(document.getElementById('s1-alt-e').value); sys.s1.alt_n = parseCoord(document.getElementById('s1-alt-n').value);
-    sys.s1.use_alt = document.getElementById('s1-active').value === 'alt';
-
-    sys.s2.e = parseCoord(document.getElementById('s2-e').value); sys.s2.n = parseCoord(document.getElementById('s2-n').value);
-    sys.s2.alt_e = parseCoord(document.getElementById('s2-alt-e').value); sys.s2.alt_n = parseCoord(document.getElementById('s2-alt-n').value);
-    sys.s2.lat = Number(document.getElementById('s2-lat').value);
-    sys.s2.use_alt = document.getElementById('s2-active').value === 'alt';
-
-    sys.s3.e = parseCoord(document.getElementById('s3-e').value); sys.s3.n = parseCoord(document.getElementById('s3-n').value);
-    sys.s3.alt_e = parseCoord(document.getElementById('s3-alt-e').value); sys.s3.alt_n = parseCoord(document.getElementById('s3-alt-n').value);
-    sys.s3.use_alt = document.getElementById('s3-active').value === 'alt';
-
-    localStorage.setItem('pwa_sys', JSON.stringify(sys)); alert("陣地データを保存しました。");
+    sys.s1.e = Number(document.getElementById('s1-e').value); sys.s1.n = Number(document.getElementById('s1-n').value);
+    sys.s2.e = Number(document.getElementById('s2-e').value); sys.s2.n = Number(document.getElementById('s2-n').value); sys.s2.lat = Number(document.getElementById('s2-lat').value);
+    sys.s3.e = Number(document.getElementById('s3-e').value); sys.s3.n = Number(document.getElementById('s3-n').value);
+    localStorage.setItem('pwa_sys', JSON.stringify(sys)); 
+    alert("陣地データを保存しました。");
   }
-
-  // ================== FO管理 ==================
-  function renderFOList() {
-    const c = document.getElementById('fo-list-container'); c.innerHTML = '';
-    sys.fos.forEach(fo => {
-      c.innerHTML += `
-      <div class="flex" style="margin-bottom:8px; align-items:flex-end; border-bottom:1px dashed var(--border-color); padding-bottom:8px;">
-        <div style="flex:1.5"><label>名称</label><input type="text" id="fo_name_${fo.id}" value="${fo.name}" style="margin-bottom:0;"></div>
-        <div style="flex:1"><label>E座標</label><input type="number" id="fo_e_${fo.id}" value="${fo.e}" style="margin-bottom:0;"></div>
-        <div style="flex:1"><label>N座標</label><input type="number" id="fo_n_${fo.id}" value="${fo.n}" style="margin-bottom:0;"></div>
-        <button class="btn-red" style="width:auto; padding:10px; margin-bottom:0;" onclick="removeFO(${fo.id})">×</button>
-      </div>`;
-    });
-    updateFDFoDropdown();
-  }
-  function addFO() { sys.fos.push({ id: Date.now(), name: "New FO", e: "", n: "" }); renderFOList(); }
-  function removeFO(id) { sys.fos = sys.fos.filter(f => f.id !== id); renderFOList(); }
-  function saveFOs() {
-    sys.fos.forEach(fo => {
-      fo.name = document.getElementById(`fo_name_${fo.id}`).value;
-      fo.e = Number(document.getElementById(`fo_e_${fo.id}`).value);
-      fo.n = Number(document.getElementById(`fo_n_${fo.id}`).value);
-    });
-    localStorage.setItem('pwa_sys', JSON.stringify(sys)); alert("FOデータを保存しました。"); updateFDFoDropdown();
-  }
-  function updateFDFoDropdown() {
-    let html = '';
-    sys.fos.forEach(fo => { html += `<option value="${fo.id}">${fo.name} (E:${pad5(fo.e)} N:${pad5(fo.n)})</option>`; });
-    document.getElementById('fdc_fo_select').innerHTML = html;
-  }
-  // ============================================
 
   function renderChargeSettings() {
     const container = document.getElementById('charge-settings-container'); container.innerHTML = '';
@@ -568,137 +464,132 @@
   }
 
   function saveChargeSettings() {
-    for (let i = 1; i <= 6; i++) { charges[i].min = Number(document.getElementById(`chg-${i}-min`).value); charges[i].max = Number(document.getElementById(`chg-${i}-max`).value); }
-    localStorage.setItem('pwa_charges', JSON.stringify(charges)); alert("装薬データを保存しました。");
+    for (let i = 1; i <= 6; i++) { 
+      charges[i].min = Number(document.getElementById(`chg-${i}-min`).value); 
+      charges[i].max = Number(document.getElementById(`chg-${i}-max`).value); 
+    }
+    localStorage.setItem('pwa_charges', JSON.stringify(charges)); 
+    alert("装薬データを保存しました。");
   }
 
   function updateTargetAndSave(e, n) {
     sys.tgt.e = Math.round(e); sys.tgt.n = Math.round(n);
-    document.getElementById('tgt-e').value = pad5(sys.tgt.e); document.getElementById('tgt-n').value = pad5(sys.tgt.n);
+    document.getElementById('tgt-e').value = pad5(sys.tgt.e); 
+    document.getElementById('tgt-n').value = pad5(sys.tgt.n);
     localStorage.setItem('pwa_sys', JSON.stringify(sys));
   }
 
-  // 距離に応じた自動装薬選択 (基準砲 S2 を使用)
   function autoSelectCharge() {
-    let te = Number(document.getElementById('tgt-e').value); let tn = Number(document.getElementById('tgt-n').value);
+    let te = Number(document.getElementById('tgt-e').value); 
+    let tn = Number(document.getElementById('tgt-n').value);
     if (!te || !tn) return;
-    
-    // S2の有効な陣地を取得
-    let s2e = sys.s2.use_alt ? sys.s2.alt_e : sys.s2.e;
-    let s2n = sys.s2.use_alt ? sys.s2.alt_n : sys.s2.n;
-    if(!s2e || !s2n) return; // 基準砲が空の場合は処理しない
-
-    let dx = te - s2e; let dy = tn - s2n; let dist = Math.sqrt(dx*dx + dy*dy);
+    let dx = te - sys.s2.e; 
+    let dy = tn - sys.s2.n; 
+    let dist = Math.sqrt(dx*dx + dy*dy);
     for (let i = 1; i <= 6; i++) {
-      if (dist >= charges[i].min && dist <= charges[i].max) { document.getElementById('charge-select').value = i; break; }
+      if (dist >= charges[i].min && dist <= charges[i].max) { 
+        document.getElementById('charge-select').value = i; 
+        break; 
+      }
     }
   }
 
   function loadTargetFromSelect() {
     let sel = document.getElementById('fdc_target_select').value;
-    if(sel) { let p = savedPoints.find(pt => pt.id == sel); if(p) { updateTargetAndSave(p.e, p.n); autoSelectCharge(); } }
+    if(sel) {
+      let p = savedPoints.find(pt => pt.id == sel);
+      if(p) { updateTargetAndSave(p.e, p.n); autoSelectCharge(); }
+    }
   }
 
   function gotoAdjustFire() {
     switchTab('survey', '観測・測量', document.querySelectorAll('.tab')[1]);
-    document.getElementById('survey-menu').value = 'surv-adjust'; switchSurveyView();
+    document.getElementById('survey-menu').value = 'surv-adjust'; 
+    switchSurveyView();
   }
 
+  // 任務終了 (End Mission) の機能
   function endMission() {
     if (confirm("現在の任務を終了し、新たな目標入力画面に戻りますか？")) {
       document.getElementById('fdc-result-card').style.display = "none";
       document.getElementById('fdc-input-area').style.display = "block";
+      // 次の任務に備えて座標入力をクリアにしておく
+      document.getElementById('tgt-e').value = "";
+      document.getElementById('tgt-n').value = "";
     }
   }
 
+  // 弾道計算コアエンジン
   function calculateForPos(pos, tgt, chargeNum) {
     const dx = tgt.e - pos.e; const dy = tgt.n - pos.n;
     const dist = Math.sqrt(dx*dx + dy*dy);
-    let rad = Math.atan2(dx, dy); let mils = rad * (3200.0 / Math.PI); if(mils < 0) mils += 6400;
+    let rad = Math.atan2(dx, dy); 
+    let mils = rad * (3200.0 / Math.PI); 
+    if(mils < 0) mils += 6400;
 
     const chgData = charges[chargeNum];
     if (dist < chgData.min || dist > chgData.max) return { error: dist < chgData.min ? "近すぎ" : "射程外", dist: dist, azm: mils };
 
-    const g = 9.80665; const v0 = Math.sqrt(chgData.max * g);
+    const g = 9.80665; 
+    const v0 = Math.sqrt(chgData.max * g);
     const highAngleRad = (Math.PI / 2.0) - (Math.asin(Math.min(dist / chgData.max, 1)) / 2.0);
     const elevMils = highAngleRad * (180.0 / Math.PI) * (6400.0 / 360.0);
     const tof = (2.0 * v0 * Math.sin(highAngleRad)) / g;
 
-    const latRad = (pos.lat || 35.0) * (Math.PI / 180.0); // それぞれの緯度(S2以外はS2の緯度を継承)
+    const latRad = (sys.s2.lat || 35.0) * (Math.PI / 180.0);
     const driftMilsRaw = Math.atan2(7.2921159e-5 * Math.sin(latRad) * dist * tof, dist) * (3200.0 / Math.PI);
     let finalAzm = Math.round(mils) + Math.round(-driftMilsRaw);
-    if(finalAzm < 0) finalAzm += 6400; if(finalAzm >= 6400) finalAzm -= 6400;
+    if(finalAzm < 0) finalAzm += 6400; 
+    if(finalAzm >= 6400) finalAzm -= 6400;
 
     return { dist: dist, azm: finalAzm, elev: elevMils, tof: tof, driftMils: Math.round(-driftMilsRaw) };
   }
 
-  // 諸元計算 (fromRes = true の場合は結果画面の装薬変更から呼ばれた)
-  function calculateMission(fromRes = false) {
-    if (!fromRes) {
-      if (currentMissionType === 'polar') {
-        let foId = document.getElementById('fdc_fo_select').value;
-        let fo = sys.fos.find(f => f.id == foId);
-        let azm = Number(document.getElementById('polar-azm').value);
-        let dist = Number(document.getElementById('polar-dist').value);
-        if(!fo || !fo.e || !fo.n) return alert("選択したFOの座標が未登録です");
-        if(!azm || !dist) return alert("方位角と距離を入力してください");
-        
-        let rad = azm * (Math.PI / 3200.0);
-        sys.tgt.e = Math.round(fo.e + dist * Math.sin(rad));
-        sys.tgt.n = Math.round(fo.n + dist * Math.cos(rad));
-        // グリッド入力欄にも反映させる
-        document.getElementById('tgt-e').value = pad5(sys.tgt.e);
-        document.getElementById('tgt-n').value = pad5(sys.tgt.n);
-      } else {
-        sys.tgt.e = Number(document.getElementById('tgt-e').value);
-        sys.tgt.n = Number(document.getElementById('tgt-n').value);
-      }
-      localStorage.setItem('pwa_sys', JSON.stringify(sys));
-      autoSelectCharge(); // 目標確定後に装薬を自動選択
+  // FDCメイン計算ボタン
+  function calculateMission() {
+    let rawE = document.getElementById('tgt-e').value;
+    let rawN = document.getElementById('tgt-n').value;
+    if(!rawE || !rawN) {
+      alert("目標座標を入力してください");
+      return;
     }
+
+    sys.tgt.e = Number(rawE); 
+    sys.tgt.n = Number(rawN);
+    localStorage.setItem('pwa_sys', JSON.stringify(sys));
+    const chg = document.getElementById('charge-select').value;
     
-    // 計算に使用する装薬番号を取得
-    const chg = document.getElementById(fromRes ? 'res-charge-select' : 'charge-select').value;
-    // UIの同期
-    document.getElementById('res-charge-select').value = chg;
-    document.getElementById('charge-select').value = chg;
+    const r1 = calculateForPos(sys.s1, sys.tgt, chg);
+    const r2 = calculateForPos(sys.s2, sys.tgt, chg);
+    const r3 = calculateForPos(sys.s3, sys.tgt, chg);
 
-    // 分隊の有効な陣地を取得 (空欄の分隊はフィルタリングする)
-    let getActive = (s) => s.use_alt ? {e: s.alt_e, n: s.alt_n, lat: sys.s2.lat} : {e: s.e, n: s.n, lat: sys.s2.lat};
+    const container = document.getElementById('fdc-results-container'); 
+    container.innerHTML = "";
     
-    let squadsToCalc = [];
-    let s1p = getActive(sys.s1); if(s1p.e && s1p.n) squadsToCalc.push({n: "1分隊" + (sys.s1.use_alt ? "<span class='badge-alt'>予備</span>" : ""), p: s1p, isRef: false});
-    let s2p = getActive(sys.s2); if(s2p.e && s2p.n) squadsToCalc.push({n: "2分隊(基準)" + (sys.s2.use_alt ? "<span class='badge-alt'>予備</span>" : ""), p: s2p, isRef: true});
-    let s3p = getActive(sys.s3); if(s3p.e && s3p.n) squadsToCalc.push({n: "3分隊" + (sys.s3.use_alt ? "<span class='badge-alt'>予備</span>" : ""), p: s3p, isRef: false});
-
-    if(squadsToCalc.length === 0) return alert("有効な陣地座標が1つも登録されていません");
-
-    const container = document.getElementById('fdc-results-container'); container.innerHTML = "";
-    
-    let refDrift = 0; // 基準砲の偏流表示用
-
-    squadsToCalc.forEach(item => {
-      let r = calculateForPos(item.p, sys.tgt, chg);
-      if(item.isRef && !r.error) refDrift = r.driftMils;
-
-      let html = `<div class="sqd-result"><div class="sqd-title"><div>${item.n}</div> <span>${r.tof ? r.tof.toFixed(1)+'秒' : ''}</span></div><div class="res-grid">`;
-      html += `<div>距離: <span class="val">${Math.round(r.dist)}m</span></div>`;
-      html += `<div>方位角: <span class="val">${pad4(r.azm)}₥</span></div>`;
-      if(r.error) html += `<div style="grid-column: span 2;">射角: <span style="color:gray">${r.error}</span></div>`;
-      else html += `<div style="grid-column: span 2;">射角: <span class="elev-val">${pad4(r.elev)}₥</span></div>`;
+    [ {n:"1分隊", r:r1}, {n:"2分隊 (基準)", r:r2}, {n:"3分隊", r:r3} ].forEach(item => {
+      let html = `<div class="sqd-result"><div class="sqd-title">${item.n} <span>${item.r.tof ? item.r.tof.toFixed(1)+'秒' : ''}</span></div><div class="res-grid">`;
+      html += `<div>距離: <span class="val">${Math.round(item.r.dist)}m</span></div>`;
+      html += `<div>方位角: <span class="val">${pad4(item.r.azm)}₥</span></div>`;
+      if(item.r.error) {
+        html += `<div style="grid-column: span 2;">射角: <span style="color:gray">${item.r.error}</span></div>`;
+      } else {
+        html += `<div style="grid-column: span 2;">射角: <span class="elev-val">${pad4(item.r.elev)}₥</span></div>`;
+      }
       container.innerHTML += html + `</div></div>`;
     });
     
-    if(refDrift !== 0) { document.getElementById('drift-info').innerText = `※コリオリ偏流: ${refDrift > 0 ? '右' : '左'} ${Math.abs(refDrift)} mil適用済`; } 
-    else { document.getElementById('drift-info').innerText = ""; }
+    if(!r2.error && r2.driftMils !== 0) { 
+      document.getElementById('drift-info').innerText = `※コリオリ偏流修正: ${r2.driftMils > 0 ? '右' : '左'} ${Math.abs(r2.driftMils)} mil適用済`; 
+    } else { 
+      document.getElementById('drift-info').innerText = ""; 
+    }
     
+    // UIを「Mission Active」状態に切り替え
     document.getElementById('fdc-input-area').style.display = "none";
     document.getElementById('fdc-result-card').style.display = "block";
-  }
-
-  // 結果画面からの装薬変更
-  function changeChargeFromRes() {
-    calculateMission(true);
+    
+    document.getElementById('tgt-e').value = pad5(sys.tgt.e); 
+    document.getElementById('tgt-n').value = pad5(sys.tgt.n);
   }
 
   // ==========================================
@@ -725,12 +616,24 @@
       let utm = latLonToUTM(pos.coords.latitude, pos.coords.longitude);
       let e = Math.floor(utm.e % 100000); let n = Math.floor(utm.n % 100000);
       document.getElementById(eId).value = pad5(e); document.getElementById(nId).value = pad5(n);
+      if(eId==='fo-e'){ sys.fo.e=e; sys.fo.n=n; localStorage.setItem('pwa_sys', JSON.stringify(sys)); }
     }, err => { alert("GPS失敗: " + err.message); document.getElementById(eId).value = ""; document.getElementById(nId).value = ""; }, { enableHighAccuracy: true });
   }
 
   function saveSurveyResult(x, y, namePrefix) {
     savedPoints.push({ id: Date.now(), name: namePrefix + "_" + pad5(x).substring(0,3), e: Math.round(x), n: Math.round(y), z: null, color: '#3b82f6' });
     localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList();
+  }
+
+  function calcPolar() {
+    let fe=Number(document.getElementById('fo-e').value); let fn=Number(document.getElementById('fo-n').value);
+    let azm=Number(document.getElementById('polar-azm').value); let dist=Number(document.getElementById('polar-dist').value);
+    if(!azm || !dist) return alert("入力エラー");
+    sys.fo.e=fe; sys.fo.n=fn;
+    let rad = azm * (Math.PI / 3200.0);
+    updateTargetAndSave(fe + dist * Math.sin(rad), fn + dist * Math.cos(rad));
+    autoSelectCharge(); 
+    switchTab('fdc', '射撃指揮 (FDC)', document.querySelectorAll('.tab')[0]); calculateMission();
   }
 
   function calcAdjust() {
@@ -742,10 +645,7 @@
     updateTargetAndSave(e, n);
     document.getElementById('adj-rl').value = 0; document.getElementById('adj-ad').value = 0;
     autoSelectCharge(); 
-    switchTab('fdc', '射撃指揮 (FDC)', document.querySelectorAll('.tab')[0]); 
-    // 修正射撃からの復帰時は即座に計算する (既存のMission Typeをgridに戻して計算)
-    setMissionType('grid');
-    calculateMission(false);
+    switchTab('fdc', '射撃指揮 (FDC)', document.querySelectorAll('.tab')[0]); calculateMission();
   }
 
   function calcF3() {
@@ -770,12 +670,26 @@
     res.classList.remove('hidden');
   }
 
-  function addRouteRow() { let row = document.createElement('div'); row.className = 'flex'; row.style.marginBottom = '5px'; row.innerHTML = `<input type="number" class="r_az" placeholder="方位(mil)"><input type="number" class="r_dist" placeholder="距離(m)"><button class="btn-red" style="width:auto; padding:10px; margin:0;" onclick="this.parentElement.remove()">×</button>`; document.getElementById('routeList').appendChild(row); }
+  function addRouteRow() { 
+    let row = document.createElement('div'); 
+    row.className = 'flex'; 
+    row.style.marginBottom = '5px'; 
+    row.innerHTML = `<input type="number" class="r_az" placeholder="方位(mil)"><input type="number" class="r_dist" placeholder="距離(m)"><button class="btn-red" style="width:auto; padding:10px; margin:0;" onclick="this.parentElement.remove()">×</button>`; 
+    document.getElementById('routeList').appendChild(row); 
+  }
+  
   function calcF5() {
     let cx = Number(document.getElementById('f5_x').value); let cy = Number(document.getElementById('f5_y').value); if(!cx||!cy) return;
     let azInputs = document.querySelectorAll('.r_az'); let distInputs = document.querySelectorAll('.r_dist');
-    for (let i = 0; i < azInputs.length; i++) { let az = Number(azInputs[i].value); let dist = Number(distInputs[i].value); if (!az || !dist) continue; cx = cx + dist * Math.sin(az * Math.PI/3200); cy = cy + dist * Math.cos(az * Math.PI/3200); }
-    let res = document.getElementById('res5'); res.innerHTML = `到達点: E:${pad5(cx)} N:${pad5(cy)} <button onclick="saveSurveyResult(${cx},${cy},'Trav')" class="btn-gps">保存</button>`; res.classList.remove('hidden');
+    for (let i = 0; i < azInputs.length; i++) { 
+      let az = Number(azInputs[i].value); let dist = Number(distInputs[i].value); 
+      if (!az || !dist) continue; 
+      cx = cx + dist * Math.sin(az * Math.PI/3200); 
+      cy = cy + dist * Math.cos(az * Math.PI/3200); 
+    }
+    let res = document.getElementById('res5'); 
+    res.innerHTML = `到達点: E:${pad5(cx)} N:${pad5(cy)} <button onclick="saveSurveyResult(${cx},${cy},'Trav')" class="btn-gps">保存</button>`; 
+    res.classList.remove('hidden');
   }
 
   // ==========================================
@@ -784,32 +698,76 @@
   function savePointManual() {
     let name = document.getElementById('f6_name').value; let x = Number(document.getElementById('f6_x').value); let y = Number(document.getElementById('f6_y').value); let color = document.getElementById('f6_color').value;
     if (!name || !x || !y) { alert("入力エラー"); return; }
-    if (editingId !== null) { let p = savedPoints.find(p => p.id === editingId); if (p) { p.name = name; p.e = x; p.n = y; p.color = color; } } 
-    else { savedPoints.push({ id: Date.now(), name: name, e: x, n: y, z: null, color: color }); lastColor = color; localStorage.setItem('mgrsLastColor', color); }
-    cancelEdit(); localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); updateMapDropdowns();
+    if (editingId !== null) { 
+      let p = savedPoints.find(p => p.id === editingId); 
+      if (p) { p.name = name; p.e = x; p.n = y; p.color = color; } 
+    } else { 
+      savedPoints.push({ id: Date.now(), name: name, e: x, n: y, z: null, color: color }); 
+      lastColor = color; 
+      localStorage.setItem('mgrsLastColor', color); 
+    }
+    cancelEdit(); 
+    localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); 
+    updateSavedList(); 
+    updateMapDropdowns();
   }
+  
   function editPoint(id) {
-    let p = savedPoints.find(p => p.id === id); if (!p) return; editingId = id;
-    document.getElementById('f6_name').value = p.name; document.getElementById('f6_x').value = pad5(p.e); document.getElementById('f6_y').value = pad5(p.n); document.getElementById('f6_color').value = p.color || lastColor;
-    document.getElementById('btn_manual_save').innerText = "更新"; document.getElementById('btn_manual_cancel').classList.remove('hidden');
+    let p = savedPoints.find(p => p.id === id); if (!p) return; 
+    editingId = id;
+    document.getElementById('f6_name').value = p.name; 
+    document.getElementById('f6_x').value = pad5(p.e); 
+    document.getElementById('f6_y').value = pad5(p.n); 
+    document.getElementById('f6_color').value = p.color || lastColor;
+    document.getElementById('btn_manual_save').innerText = "更新"; 
+    document.getElementById('btn_manual_cancel').classList.remove('hidden');
   }
-  function cancelEdit() { editingId = null; document.getElementById('f6_name').value = ""; document.getElementById('f6_x').value = ""; document.getElementById('f6_y').value = ""; document.getElementById('btn_manual_save').innerText = "登録"; document.getElementById('btn_manual_cancel').classList.add('hidden'); }
-  function deletePoint(id) { savedPoints = savedPoints.filter(p => p.id !== id); localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); }
-  function deleteAllPoints() { if(confirm("全削除しますか？")) { savedPoints = []; localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); } }
+  
+  function cancelEdit() { 
+    editingId = null; 
+    document.getElementById('f6_name').value = ""; 
+    document.getElementById('f6_x').value = ""; 
+    document.getElementById('f6_y').value = ""; 
+    document.getElementById('btn_manual_save').innerText = "登録"; 
+    document.getElementById('btn_manual_cancel').classList.add('hidden'); 
+  }
+  
+  function deletePoint(id) { 
+    savedPoints = savedPoints.filter(p => p.id !== id); 
+    localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); 
+    updateSavedList(); 
+  }
+  
+  function deleteAllPoints() { 
+    if(confirm("全削除しますか？")) { 
+      savedPoints = []; 
+      localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); 
+      updateSavedList(); 
+    } 
+  }
+  
   function applySort() {
     let mode = document.getElementById('sort_select').value; if (mode === 'manual') return;
-    if (mode === 'name_asc') savedPoints.sort((a,b) => a.name.localeCompare(b.name,'ja')); else if (mode === 'e_asc') savedPoints.sort((a,b) => a.e - b.e);
-    localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList();
+    if (mode === 'name_asc') {
+      savedPoints.sort((a,b) => a.name.localeCompare(b.name,'ja')); 
+    } else if (mode === 'e_asc') {
+      savedPoints.sort((a,b) => a.e - b.e);
+    }
+    localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); 
+    updateSavedList();
   }
+  
   function updateSavedList() {
     let html = "";
     savedPoints.forEach((p) => {
       let pColor = p.color || '#ff3b30';
       html += `<div class="list-item" data-id="${p.id}"><div class="drag-handle">≡</div><div style="flex:1; margin-left:5px;"><strong><span style="display:inline-block; width:12px; height:12px; background:${pColor}; border-radius:50%; margin-right:5px;"></span>${p.name}</strong><br><span style="font-size:0.85rem; color:#888;">E:${pad5(p.e)} N:${pad5(p.n)}</span></div><div style="display:flex; gap:5px;"><button class="btn-gray" style="padding:6px; margin:0;" onclick="editPoint(${p.id})">編</button><button class="btn-red" style="padding:6px; margin:0;" onclick="deletePoint(${p.id})">削</button></div></div>`;
     });
-    document.getElementById('savedList').innerHTML = html; updateMapDropdowns();
+    document.getElementById('savedList').innerHTML = html; 
+    updateMapDropdowns();
   }
   
+  // ドラッグ＆ドロップ
   const listContainer = document.getElementById('savedList'); let dragEl = null;
   listContainer.addEventListener('touchstart', function(e) { const handle = e.target.closest('.drag-handle'); if (!handle) return; e.preventDefault(); dragEl = handle.closest('.list-item'); dragEl.classList.add('dragging'); }, {passive: false});
   listContainer.addEventListener('touchmove', function(e) { if (!dragEl) return; e.preventDefault(); const touch = e.touches[0]; const target = document.elementFromPoint(touch.clientX, touch.clientY); if (!target) return; const targetItem = target.closest('.list-item'); if (targetItem && targetItem !== dragEl) { const rect = targetItem.getBoundingClientRect(); const isNext = (touch.clientY - rect.top) / (rect.bottom - rect.top) > 0.5; targetItem.parentNode.insertBefore(dragEl, isNext ? targetItem.nextSibling : targetItem); } }, {passive: false});
@@ -821,11 +779,23 @@
     let lines = text.split('\n'); let added=0;
     for (let line of lines) {
        let parts = line.trim().split(/[\s\t]+/);
-       if (parts.length >= 3) { let name = parts[0]; let e = Number(parts[1]); let n = Number(parts[2]); if(e && n) { let color = parts[4] || parts[3] || lastColor; if(!color.startsWith('#')) color=lastColor; savedPoints.push({ id: Date.now()+added, name: name, e: e, n: n, z: null, color: color }); added++; } }
+       if (parts.length >= 3) { 
+         let name = parts[0]; let e = Number(parts[1]); let n = Number(parts[2]); 
+         if(e && n) { 
+           let color = parts[4] || parts[3] || lastColor; 
+           if(!color.startsWith('#')) color=lastColor; 
+           savedPoints.push({ id: Date.now()+added, name: name, e: e, n: n, z: null, color: color }); 
+           added++; 
+         } 
+       }
     }
-    localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); updateSavedList(); alert(`${added}件追加`); document.getElementById('io_text').value=""; toggleBatchIO();
+    localStorage.setItem('mgrsPoints', JSON.stringify(savedPoints)); 
+    updateSavedList(); alert(`${added}件追加`); 
+    document.getElementById('io_text').value=""; toggleBatchIO();
   }
-  function exportPoints() { document.getElementById('io_text').value = savedPoints.map(p => `${p.name} ${pad5(p.e)} ${pad5(p.n)} - ${p.color || '#ff3b30'}`).join('\n'); }
+  function exportPoints() { 
+    document.getElementById('io_text').value = savedPoints.map(p => `${p.name} ${pad5(p.e)} ${pad5(p.n)} - ${p.color || '#ff3b30'}`).join('\n'); 
+  }
 
   // ==========================================
   // マップエンジン
@@ -834,41 +804,177 @@
   let currentP1 = null; let currentP2 = null;
 
   function toggleMapSettings() { document.getElementById('map_settings_area').classList.toggle('hidden'); }
+  
   function updateMapDropdowns() {
-    let html = '<option value="">--- 選択 ---</option>'; savedPoints.forEach(p => { html += `<option value="${p.id}">${p.name}</option>`; });
-    document.getElementById('map_start').innerHTML = html; document.getElementById('map_end').innerHTML = html; document.getElementById('fdc_target_select').innerHTML = html;
+    let html = '<option value="">--- 選択 ---</option>'; 
+    savedPoints.forEach(p => { html += `<option value="${p.id}">${p.name}</option>`; });
+    document.getElementById('map_start').innerHTML = html; 
+    document.getElementById('map_end').innerHTML = html; 
+    document.getElementById('fdc_target_select').innerHTML = html;
   }
   
   function saveMapOverlay() {
-    let fileInput = document.getElementById('map_image_input'); let tl_e = Number(document.getElementById('map_tl_e').value); let tl_n = Number(document.getElementById('map_tl_n').value); let br_e = Number(document.getElementById('map_br_e').value); let br_n = Number(document.getElementById('map_br_n').value);
+    let fileInput = document.getElementById('map_image_input'); 
+    let tl_e = Number(document.getElementById('map_tl_e').value); let tl_n = Number(document.getElementById('map_tl_n').value); 
+    let br_e = Number(document.getElementById('map_br_e').value); let br_n = Number(document.getElementById('map_br_n').value);
     if(!tl_e||!br_e) return alert("座標入力エラー");
+    
     if (fileInput.files && fileInput.files[0]) {
       let reader = new FileReader();
       reader.onload = function(e) {
         let img = new Image();
         img.onload = function() {
-          let canvas = document.createElement('canvas'); let ctx = canvas.getContext('2d'); let maxW = 1600; let scale = img.width > maxW ? maxW / img.width : 1;
-          canvas.width = img.width * scale; canvas.height = img.height * scale; ctx.drawImage(img, 0, 0, canvas.width, canvas.height); let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
-          mapOverlay = { dataUrl: dataUrl, tl_e: tl_e, tl_n: tl_n, br_e: br_e, br_n: br_n }; localStorage.setItem('mgrsMapOverlay', JSON.stringify(mapOverlay)); mapImageObj.src = dataUrl; toggleMapSettings(); drawMap(null, null, true);
+          let canvas = document.createElement('canvas'); let ctx = canvas.getContext('2d'); 
+          let maxW = 1600; let scale = img.width > maxW ? maxW / img.width : 1;
+          canvas.width = img.width * scale; canvas.height = img.height * scale; 
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height); 
+          let dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+          mapOverlay = { dataUrl: dataUrl, tl_e: tl_e, tl_n: tl_n, br_e: br_e, br_n: br_n }; 
+          localStorage.setItem('mgrsMapOverlay', JSON.stringify(mapOverlay)); 
+          mapImageObj.src = dataUrl; toggleMapSettings(); drawMap(null, null, true);
         }; img.src = e.target.result;
       }; reader.readAsDataURL(fileInput.files[0]);
-    } else if (mapOverlay) { mapOverlay.tl_e = tl_e; mapOverlay.tl_n = tl_n; mapOverlay.br_e = br_e; mapOverlay.br_n = br_n; localStorage.setItem('mgrsMapOverlay', JSON.stringify(mapOverlay)); toggleMapSettings(); drawMap(null, null, true); }
+    } else if (mapOverlay) { 
+      mapOverlay.tl_e = tl_e; mapOverlay.tl_n = tl_n; mapOverlay.br_e = br_e; mapOverlay.br_n = br_n; 
+      localStorage.setItem('mgrsMapOverlay', JSON.stringify(mapOverlay)); 
+      toggleMapSettings(); drawMap(null, null, true); 
+    }
   }
-  function clearMapOverlay() { mapOverlay = null; localStorage.removeItem('mgrsMapOverlay'); drawMap(null, null, true); }
+  
+  function clearMapOverlay() { 
+    mapOverlay = null; localStorage.removeItem('mgrsMapOverlay'); drawMap(null, null, true); 
+  }
 
   function calcMap() {
     let sId = document.getElementById('map_start').value; let eId = document.getElementById('map_end').value; if (!sId || !eId) return;
     currentP1 = savedPoints.find(p => p.id == sId); currentP2 = savedPoints.find(p => p.id == eId);
     let dx = currentP2.e - currentP1.e; let dy = currentP2.n - currentP1.n;
     let dist = Math.sqrt(dx*dx + dy*dy); let rad = Math.atan2(dx, dy); let mil = rad * (3200 / Math.PI); if(mil<0) mil+=6400;
-    document.getElementById('resMap').innerHTML = `【${currentP1.name} → ${currentP2.name}】<br>方位角: ${pad4(mil)} mil<br>距離: ${Math.round(dist)} m`; document.getElementById('resMap').classList.remove('hidden'); drawMap(currentP1, currentP2, false);
+    document.getElementById('resMap').innerHTML = `【${currentP1.name} → ${currentP2.name}】<br>方位角: ${pad4(mil)} mil<br>距離: ${Math.round(dist)} m`; 
+    document.getElementById('resMap').classList.remove('hidden'); drawMap(currentP1, currentP2, false);
   }
 
   function resetMapView() { drawMap(currentP1, currentP2, true); }
 
   function drawMap(highlightP1 = null, highlightP2 = null, resetView = false) {
-    let canvas = document.getElementById('mapCanvas'); let ctx = canvas.getContext('2d'); let w = canvas.width=canvas.offsetWidth; let h = canvas.height=canvas.offsetHeight;
-    const style = getComputedStyle(document.body); const cBg = style.getPropertyValue('--map-bg').trim(); const cGrid1km = style.getPropertyValue('--map-grid-1km').trim(); const cGrid100m = style.getPropertyValue('--map-grid-100m').trim(); const cText = style.getPropertyValue('--map-text').trim(); const cGridHalo = style.getPropertyValue('--map-grid-halo').trim(); const cTextHalo = style.getPropertyValue('--map-text-halo').trim();
+    let canvas = document.getElementById('mapCanvas'); let ctx = canvas.getContext('2d'); 
+    let w = canvas.width = canvas.offsetWidth; let h = canvas.height = canvas.offsetHeight;
+    
+    const style = getComputedStyle(document.body); 
+    const cBg = style.getPropertyValue('--map-bg').trim(); 
+    const cGrid1km = style.getPropertyValue('--map-grid-1km').trim(); 
+    const cGrid100m = style.getPropertyValue('--map-grid-100m').trim(); 
+    const cText = style.getPropertyValue('--map-text').trim(); 
+    const cGridHalo = style.getPropertyValue('--map-grid-halo').trim(); 
+    const cTextHalo = style.getPropertyValue('--map-text-halo').trim();
+    
     ctx.fillStyle = cBg; ctx.fillRect(0, 0, w, h);
 
-    let getActive = (s) => s.use_alt ? {e: s.alt_e, n:
+    let pointsToBound = [...savedPoints]; 
+    pointsToBound.push({e:sys.s1.e, n:sys.s1.n, name:"S1", color:"#3b82f6"}); 
+    pointsToBound.push({e:sys.s2.e, n:sys.s2.n, name:"S2", color:"#3b82f6"}); 
+    pointsToBound.push({e:sys.s3.e, n:sys.s3.n, name:"S3", color:"#3b82f6"}); 
+    pointsToBound.push({e:sys.fo.e, n:sys.fo.n, name:"FO", color:"#10b981"}); 
+    pointsToBound.push({e:sys.tgt.e, n:sys.tgt.n, name:"TGT", color:"#ef4444"});
+    
+    if (mapOverlay) { 
+      pointsToBound.push({e: mapOverlay.tl_e, n: mapOverlay.tl_n}); 
+      pointsToBound.push({e: mapOverlay.br_e, n: mapOverlay.br_n}); 
+    }
+
+    if (resetView) {
+      mapState.refE = pointsToBound[0].e; mapState.refN = pointsToBound[0].n; let minDx = 0, maxDx = 0, minDy = 0, maxDy = 0;
+      pointsToBound.forEach(p => { let dx = p.e - mapState.refE; let dy = p.n - mapState.refN; if (dx < minDx) minDx = dx; if (dx > maxDx) maxDx = dx; if (dy < minDy) minDy = dy; if (dy > maxDy) maxDy = dy; });
+      if (maxDx - minDx < 1000) { let mid = (maxDx + minDx)/2; minDx = mid - 500; maxDx = mid + 500; } 
+      if (maxDy - minDy < 1000) { let mid = (maxDy + minDy)/2; minDy = mid - 500; maxDy = mid + 500; }
+      mapState.minDx = minDx; mapState.maxDx = maxDx; mapState.minDy = minDy; mapState.maxDy = maxDy; 
+      mapState.baseScale = Math.min((w - mapState.padding*2) / (maxDx - minDx), (h - mapState.padding*2) / (maxDy - minDy)); 
+      mapState.x = 0; mapState.y = 0; mapState.scale = 1;
+    }
+
+    let getX = (e) => { return (mapState.padding + (e - mapState.refE - mapState.minDx) * mapState.baseScale) * mapState.scale + mapState.x; }; 
+    let getY = (n) => { return (h - mapState.padding - (n - mapState.refN - mapState.minDy) * mapState.baseScale) * mapState.scale + mapState.y; };
+    
+    if (mapOverlay && mapImageObj.complete && mapImageObj.src) { 
+      let img_x = getX(mapOverlay.tl_e); let img_y = getY(mapOverlay.tl_n); 
+      let img_w = getX(mapOverlay.br_e) - img_x; let img_h = getY(mapOverlay.br_n) - img_y; 
+      ctx.drawImage(mapImageObj, img_x, img_y, img_w, img_h); 
+    }
+
+    let screenToE = (X) => mapState.refE + mapState.minDx + ((X - mapState.x) / mapState.scale - mapState.padding) / mapState.baseScale; 
+    let screenToN = (Y) => mapState.refN + mapState.minDy + ((h - mapState.padding - (Y - mapState.y) / mapState.scale)) / mapState.baseScale;
+    let sE = Math.floor(screenToE(0) / 1000) * 1000; let eE = Math.ceil(screenToE(w) / 1000) * 1000; 
+    let sN = Math.floor(screenToN(h) / 1000) * 1000; let eN = Math.ceil(screenToN(0) / 1000) * 1000;
+    if(sE>eE){let t=sE; sE=eE; eE=t;} if(sN>eN){let t=sN; sN=eN; eN=t;}
+
+    ctx.lineJoin = "round";
+    let pixelPer100m = 100 * mapState.baseScale * mapState.scale;
+    if (pixelPer100m > 12) { 
+      let sE100=Math.floor(sE/100)*100; let eE100=Math.ceil(eE/100)*100; 
+      let sN100=Math.floor(sN/100)*100; let eN100=Math.ceil(eN/100)*100;
+      ctx.beginPath(); 
+      for(let e=sE100; e<=eE100; e+=100) { let x=getX(e); if(x>-10&&x<w+10){ ctx.moveTo(x,0); ctx.lineTo(x,h); } } 
+      for(let n=sN100; n<=eN100; n+=100) { let y=getY(n); if(y>-10&&y<h+10){ ctx.moveTo(0,y); ctx.lineTo(w,y); } }
+      ctx.strokeStyle=cGridHalo; ctx.lineWidth=2; ctx.stroke(); ctx.strokeStyle=cGrid100m; ctx.lineWidth=1; ctx.stroke();
+    }
+    
+    ctx.beginPath(); 
+    for(let e=sE; e<=eE; e+=1000) { let x=getX(e); if(x>-10&&x<w+10){ ctx.moveTo(x,0); ctx.lineTo(x,h); } } 
+    for(let n=sN; n<=eN; n+=1000) { let y=getY(n); if(y>-10&&y<h+10){ ctx.moveTo(0,y); ctx.lineTo(w,y); } }
+    ctx.strokeStyle=cGridHalo; ctx.lineWidth=3; ctx.stroke(); ctx.strokeStyle=cGrid1km; ctx.lineWidth=1.5; ctx.stroke();
+
+    ctx.font = "bold 11px sans-serif"; ctx.textAlign="center"; 
+    for(let e=sE; e<=eE; e+=1000) { let x=getX(e); if(x>0&&x<w){ let t=pad5(e).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,x,h-5); ctx.fillStyle=cText; ctx.fillText(t,x,h-5); } }
+    ctx.textAlign="left"; 
+    for(let n=sN; n<=eN; n+=1000) { let y=getY(n); if(y>0&&y<h){ let t=pad5(n).substring(0,2); ctx.lineWidth=3; ctx.strokeStyle=cTextHalo; ctx.strokeText(t,5,y+4); ctx.fillStyle=cText; ctx.fillText(t,5,y+4); } }
+
+    if (highlightP1 && highlightP2) { 
+      ctx.strokeStyle = isNightMode ? '#ff3b30' : 'rgba(0,122,255,0.7)'; ctx.lineWidth=3; ctx.beginPath(); 
+      ctx.moveTo(getX(highlightP1.e), getY(highlightP1.n)); ctx.lineTo(getX(highlightP2.e), getY(highlightP2.n)); ctx.stroke(); 
+    }
+
+    pointsToBound.forEach(p => {
+      let x = getX(p.e), y = getY(p.n); let pinColor = isNightMode ? '#ff3b30' : (p.color || '#ff3b30');
+      if(x > -20 && x < w + 20 && y > -20 && y < h + 20) { 
+        ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fillStyle = pinColor; ctx.fill(); 
+        ctx.strokeStyle = cBg; ctx.lineWidth = 1.5; ctx.stroke(); 
+        ctx.font = "bold 11px sans-serif"; ctx.lineWidth = 3; ctx.strokeStyle = cTextHalo; 
+        ctx.strokeText(p.name, x+8, y+4); ctx.fillStyle = isNightMode?'#ff3b30':'#333'; ctx.fillText(p.name, x+8, y+4); 
+      }
+    });
+  }
+
+  const canvas = document.getElementById('mapCanvas'); 
+  let isDragging = false; let startPan = {x:0, y:0}; let initialPinchDist = null;
+  canvas.addEventListener('touchstart', (e) => { 
+    e.preventDefault(); 
+    if(e.touches.length===1){ isDragging=true; startPan={x:e.touches[0].clientX-mapState.x, y:e.touches[0].clientY-mapState.y}; } 
+    else if(e.touches.length===2){ isDragging=false; initialPinchDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); } 
+  }, {passive:false});
+  canvas.addEventListener('touchmove', (e) => { 
+    e.preventDefault(); 
+    if(e.touches.length===1 && isDragging){ 
+      mapState.x=e.touches[0].clientX-startPan.x; mapState.y=e.touches[0].clientY-startPan.y; requestAnimationFrame(()=>drawMap(currentP1,currentP2,false)); 
+    } else if(e.touches.length===2 && initialPinchDist){ 
+      const newDist=Math.hypot(e.touches[0].clientX-e.touches[1].clientX, e.touches[0].clientY-e.touches[1].clientY); 
+      const centerX=(e.touches[0].clientX+e.touches[1].clientX)/2; const centerY=(e.touches[0].clientY+e.touches[1].clientY)/2; 
+      const rect=canvas.getBoundingClientRect(); const canvasCenterX=centerX-rect.left; const canvasCenterY=centerY-rect.top; 
+      const scaleFactor=newDist/initialPinchDist; mapState.x=canvasCenterX-(canvasCenterX-mapState.x)*scaleFactor; 
+      mapState.y=canvasCenterY-(canvasCenterY-mapState.y)*scaleFactor; mapState.scale*=scaleFactor; 
+      requestAnimationFrame(()=>drawMap(currentP1,currentP2,false)); initialPinchDist=newDist; 
+    } 
+  }, {passive:false});
+  canvas.addEventListener('touchend', (e) => { 
+    e.preventDefault(); if(e.touches.length<2) initialPinchDist=null; if(e.touches.length===0) isDragging=false; 
+  });
+
+  if ('serviceWorker' in navigator) { 
+    window.addEventListener('load', () => { 
+      navigator.serviceWorker.register('sw.js').then(registration => { 
+        registration.update(); 
+      }).catch(err => console.log('SW登録失敗:', err)); 
+    });
+  }
+</script>
+</body>
+</html>
