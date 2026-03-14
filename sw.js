@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tactical-fdc-v1'; // バージョン名。大きく構成を変えた時はv3, v4と変えます
+const CACHE_NAME = 'tactical-fdc-v2'; // バージョン名。大きく構成を変えた時はv3, v4と変えます
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
